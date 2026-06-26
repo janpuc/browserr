@@ -64,6 +64,8 @@ export interface BrowserrConfig {
     enableLibraryRails: boolean;
     enableTrailerAutoplay: boolean;
     heroRotateSeconds: number;
+    hoverExpandMs: number;
+    mobileAutoExpand: boolean;
   };
   appearance: {
     theme: Theme;
@@ -88,7 +90,13 @@ export function defaultConfig(): BrowserrConfig {
     // overrides this to the absolute volume path `sqlite:///data/browserr.db`.
     data: { databaseUrl: "sqlite://./data/browserr.db", redisUrl: "" },
     recs: { enableRecommendations: true, enableEmbeddings: false, refreshCron: "0 */6 * * *" },
-    features: { enableLibraryRails: true, enableTrailerAutoplay: true, heroRotateSeconds: 12 },
+    features: {
+      enableLibraryRails: true,
+      enableTrailerAutoplay: true,
+      heroRotateSeconds: 12,
+      hoverExpandMs: 900,
+      mobileAutoExpand: true,
+    },
     appearance: { theme: "dark", accent: "0 72% 51%" },
   };
 }
@@ -139,6 +147,8 @@ export const settingsPatchSchema = z
         enableLibraryRails: z.boolean(),
         enableTrailerAutoplay: z.boolean(),
         heroRotateSeconds: z.number().int().min(0).max(120),
+        hoverExpandMs: z.number().int().min(0).max(5000),
+        mobileAutoExpand: z.boolean(),
       })
       .partial(),
     appearance: z
@@ -202,6 +212,8 @@ export interface PublicConfig {
     enableLibraryRails: boolean;
     enableTrailerAutoplay: boolean;
     heroRotateSeconds: number;
+    hoverExpandMs: number;
+    mobileAutoExpand: boolean;
   };
   appearance: { theme: Theme; accent: string };
 }

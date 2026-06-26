@@ -32,7 +32,13 @@ export const DEMO_PUBLIC_CONFIG: PublicConfig = {
   region: { region: "US", services: [], monetizationTypes: ["flatrate"] },
   auth: { mode: "none" },
   recs: { enableRecommendations: true, enableEmbeddings: false },
-  features: { enableLibraryRails: true, enableTrailerAutoplay: true, heroRotateSeconds: 12 },
+  features: {
+    enableLibraryRails: true,
+    enableTrailerAutoplay: true,
+    heroRotateSeconds: 12,
+    hoverExpandMs: 900,
+    mobileAutoExpand: true,
+  },
   appearance: { theme: "dark", accent: "0 72% 51%" },
 };
 
@@ -51,6 +57,35 @@ async function loadHome(): Promise<HomeFeed> {
   }
   homeCache = home;
   return home;
+}
+
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  let a = (seed + 1) >>> 0;
+  const rng = () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Rotate + reshuffle the snapshot so the demo's "refresh" also feels different. */
+async function demoHome(variant: number): Promise<HomeFeed> {
+  const home = await loadHome();
+  if (!variant) return home;
+  const v = Math.abs(variant);
+  const n = home.rails.length;
+  const rotated = [...home.rails.slice(v % n), ...home.rails.slice(0, v % n)];
+  return {
+    hero: seededShuffle(home.hero, v),
+    rails: rotated.map((r) => ({ ...r, items: seededShuffle(r.items, v) })),
+  };
 }
 
 /** A handful of other catalog items to fill "More Like This" for synthesized detail. */
@@ -150,7 +185,7 @@ export const demoApi: Api = {
     return [{ code: "US", name: "United States" }];
   },
   getServices: async (region?: string) => ({ region: region ?? "US", services: [] }),
-  getHome: () => loadHome(),
+  getHome: (variant = 0) => demoHome(variant),
   getRails: async () => ({ rails: [], hasMore: false }),
   getTitle: (type, id) => demoTitle(type, id),
   getAvailability: async () => ({ availability: {} }),

@@ -1,20 +1,18 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Info, Play, Plus, ThumbsDown } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { useCallback, useEffect, useRef } from "react";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { useAvailabilityStore } from "@/components/providers/availability";
 import { useConfig } from "@/components/providers/config";
 import { useDetail } from "@/components/providers/detail";
 import { TrailerPlayer } from "@/components/TrailerPlayer";
 import { BlurImage } from "@/components/ui/BlurImage";
-import { useToast } from "@/components/ui/toast";
 import { api, sendSignalBeacon } from "@/lib/api";
 import { tmdbImage } from "@/lib/image";
+import { useIsTouch } from "@/lib/platform";
 import type { MediaSummary } from "@/lib/types";
-import { ratingPercent } from "@/lib/utils";
 
 function Poster({ src, alt }: { src: string; alt: string }) {
   return (
@@ -42,22 +40,28 @@ function NoPoster({ title }: { title: string }) {
 export function MediaCard({
   item,
   rank,
-  onHide,
+  expanded = false,
+  expandShiftPx = 0,
+  onRequestExpand,
+  onRequestCollapse,
 }: {
   item: MediaSummary;
   rank?: number;
-  onHide?: (id: number) => void;
+  /** Driven by the parent Rail (it owns which card is expanded). */
+  expanded?: boolean;
+  /** px nudge applied to keep an edge expansion fully on-screen. */
+  expandShiftPx?: number;
+  onRequestExpand?: () => void;
+  onRequestCollapse?: () => void;
 }) {
   const { open } = useDetail();
   const { config } = useConfig();
-  const { toast } = useToast();
   const { set: setAvailability } = useAvailabilityStore();
   const reduce = useReducedMotion();
+  const touch = useIsTouch();
 
-  const [hovered, setHovered] = useState(false);
-  const [hidden, setHidden] = useState(false);
   const dwell = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const trailerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const grace = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hoverLongFired = useRef(false);
   const trailer50Fired = useRef(false);
 
@@ -67,11 +71,11 @@ export function MediaCard({
     [item.id, item.mediaType],
   );
 
-  // Fetch full detail on hover to power the inline trailer + hydrate availability.
+  // Detail (for the trailer) is only fetched once the card is expanded.
   const { data } = useQuery({
     queryKey: ["title", item.mediaType, item.id],
     queryFn: () => api.getTitle(item.mediaType, item.id),
-    enabled: hovered,
+    enabled: expanded,
     staleTime: 5 * 60_000,
   });
   useEffect(() => {
@@ -79,46 +83,54 @@ export function MediaCard({
   }, [data, setAvailability, item.mediaType, item.id]);
 
   const trailerKey = data?.detail.trailer?.key ?? null;
-  const wantsTrailer = hovered && config.features.enableTrailerAutoplay && !reduce && !!trailerKey;
+  const wantsTrailer = expanded && config.features.enableTrailerAutoplay && !reduce && !!trailerKey;
+  const dwellMs = config.features.hoverExpandMs || 900;
 
-  const startHover = useCallback(() => {
-    if (dwell.current) clearTimeout(dwell.current);
-    dwell.current = setTimeout(() => {
-      setHovered(true);
-      if (!hoverLongFired.current) {
-        hoverLongFired.current = true;
-        fire("hover_long");
-      }
-    }, 480);
-  }, [fire]);
-
-  const endHover = useCallback(() => {
-    if (dwell.current) clearTimeout(dwell.current);
-    if (trailerTimer.current) clearTimeout(trailerTimer.current);
-    setHovered(false);
-  }, []);
+  useEffect(() => {
+    if (expanded && !hoverLongFired.current) {
+      hoverLongFired.current = true;
+      fire("hover_long");
+    }
+  }, [expanded, fire]);
 
   // Heuristic "trailer played to ~50%": continuous playback for ~9s.
   useEffect(() => {
-    if (wantsTrailer && !trailer50Fired.current) {
-      trailerTimer.current = setTimeout(() => {
-        trailer50Fired.current = true;
-        fire("trailer_50");
-      }, 9000);
-    }
-    return () => {
-      if (trailerTimer.current) clearTimeout(trailerTimer.current);
-    };
+    if (!wantsTrailer || trailer50Fired.current) return;
+    const t = setTimeout(() => {
+      trailer50Fired.current = true;
+      fire("trailer_50");
+    }, 9000);
+    return () => clearTimeout(t);
   }, [wantsTrailer, fire]);
+
+  const clearTimers = useCallback(() => {
+    if (dwell.current) clearTimeout(dwell.current);
+    if (grace.current) clearTimeout(grace.current);
+  }, []);
+  useEffect(() => clearTimers, [clearTimers]);
+
+  // Desktop: a longer hold expands; a short grace on leave bridges the gap to the
+  // overflowing preview so it doesn't flicker. Touch uses the Rail's auto-expand.
+  const onEnter = useCallback(() => {
+    if (touch) return;
+    if (grace.current) clearTimeout(grace.current);
+    if (dwell.current) clearTimeout(dwell.current);
+    dwell.current = setTimeout(() => onRequestExpand?.(), dwellMs);
+  }, [touch, dwellMs, onRequestExpand]);
+
+  const onLeave = useCallback(() => {
+    if (touch) return;
+    if (dwell.current) clearTimeout(dwell.current);
+    grace.current = setTimeout(() => onRequestCollapse?.(), 90);
+  }, [touch, onRequestCollapse]);
 
   const openDetail = useCallback(() => {
     fire("detail_open");
     open(item.mediaType, item.id);
   }, [fire, open, item.mediaType, item.id]);
 
-  if (hidden) return null;
-
   const poster = tmdbImage(item.posterPath, "poster", "w342");
+  const backdrop = tmdbImage(item.backdropPath, "backdrop", "w780") ?? poster;
 
   return (
     <div
@@ -126,10 +138,10 @@ export function MediaCard({
       role="button"
       tabIndex={0}
       aria-label={item.title}
-      onMouseEnter={startHover}
-      onMouseLeave={endHover}
-      onFocus={startHover}
-      onBlur={endHover}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+      onFocus={onEnter}
+      onBlur={onLeave}
       onClick={openDetail}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -138,18 +150,8 @@ export function MediaCard({
         }
       }}
     >
-      <motion.div
-        className="relative aspect-[2/3] overflow-hidden rounded-md bg-muted ring-0 ring-white/20 group-focus-visible:ring-2"
-        whileHover={reduce ? undefined : { scale: 1.05 }}
-        transition={{ type: "tween", duration: 0.18 }}
-      >
+      <motion.div className="relative aspect-[2/3] overflow-hidden rounded-md bg-muted ring-0 ring-white/20 group-focus-visible:ring-2">
         {poster ? <Poster src={poster} alt={item.title} /> : <NoPoster title={item.title} />}
-
-        {wantsTrailer && trailerKey && (
-          <div className="pointer-events-none absolute inset-0">
-            <TrailerPlayer youtubeKey={trailerKey} loop muted controls={false} title={item.title} />
-          </div>
-        )}
 
         {rank !== undefined && (
           <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-lg font-black leading-none tabular-nums text-white shadow">
@@ -160,80 +162,32 @@ export function MediaCard({
         <div className="absolute right-1.5 top-1.5">
           <AvailabilityBadge mediaType={item.mediaType} id={item.id} hideWhenRequestable className="text-[10px]" />
         </div>
-
-        <AnimatePresence>
-          {hovered && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.16 }}
-              className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent p-2.5 pt-8"
-            >
-              <p className="line-clamp-1 text-sm font-semibold">{item.title}</p>
-              <div className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-                {item.year && <span>{item.year}</span>}
-                {item.voteAverage > 0 && (
-                  <span className="font-semibold text-emerald-400">{ratingPercent(item.voteAverage)}%</span>
-                )}
-                <span className="uppercase">{item.mediaType}</span>
-              </div>
-              <div className="mt-2 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                <button
-                  className="flex h-7 items-center gap-1 rounded-full bg-white px-2.5 text-xs font-bold text-black transition hover:bg-white/90"
-                  onClick={openDetail}
-                  aria-label={`Play ${item.title}`}
-                >
-                  <Play className="h-3.5 w-3.5 fill-black" /> Play
-                </button>
-                <IconAction
-                  label="Add to My List"
-                  onClick={() => {
-                    fire("watchlist_add");
-                    toast({ title: "Added to My List", description: item.title, variant: "success" });
-                  }}
-                >
-                  <Plus className="h-4 w-4" />
-                </IconAction>
-                <IconAction label="More info" onClick={openDetail}>
-                  <Info className="h-4 w-4" />
-                </IconAction>
-                <IconAction
-                  label="Not interested"
-                  onClick={() => {
-                    fire("not_interested");
-                    setHidden(true);
-                    onHide?.(item.id);
-                  }}
-                >
-                  <ThumbsDown className="h-4 w-4" />
-                </IconAction>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.div>
-    </div>
-  );
-}
 
-function IconAction({
-  label,
-  onClick,
-  children,
-}: {
-  label: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      aria-label={label}
-      title={label}
-      onClick={onClick}
-      className="flex h-7 w-7 items-center justify-center rounded-full border border-white/40 bg-black/40 text-white transition hover:border-white hover:bg-black/70"
-    >
-      {children}
-    </button>
+      {/* In-row expansion: a 16:9 frame at the poster's height (so it's exactly the
+          trailer's ratio), centred and overflowing into the space the Rail clears
+          on either side. Only the trailer + title — details open on click. */}
+      {expanded && (
+        <motion.div
+          className="absolute left-1/2 top-0 z-30 h-full w-[266.6%] overflow-hidden rounded-md bg-black shadow-2xl ring-1 ring-white/10"
+          style={{ transform: `translateX(calc(-50% + ${expandShiftPx}px))` }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.18 }}
+        >
+          {/* Backdrop is the base layer so there's never a black flash; the
+              trailer fades in over it once it's ready. */}
+          {backdrop && <BlurImage src={backdrop} alt="" fill sizes="540px" className="object-cover" />}
+          {wantsTrailer && trailerKey && (
+            <div className="absolute inset-0">
+              <TrailerPlayer youtubeKey={trailerKey} loop muted cover title={item.title} />
+            </div>
+          )}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-2.5 pt-10">
+            <p className="line-clamp-1 text-sm font-bold drop-shadow">{item.title}</p>
+          </div>
+        </motion.div>
+      )}
+    </div>
   );
 }

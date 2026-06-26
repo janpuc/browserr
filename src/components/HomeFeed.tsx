@@ -6,6 +6,7 @@ import { AlertTriangle, Clapperboard, Settings as SettingsIcon } from "lucide-re
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Hero } from "@/components/Hero";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { Rail } from "@/components/Rail";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,11 +14,21 @@ import { api } from "@/lib/api";
 import type { Rail as RailModel } from "@/lib/types";
 
 export function HomeFeed() {
+  // A bumped seed makes each refresh pull a *different* slice of the catalog
+  // (different TMDB page / genres / order) rather than the same feed.
+  const seedRef = useRef(0);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: ["home"],
-    queryFn: api.getHome,
+    queryFn: () => api.getHome(seedRef.current),
     retry: false,
   });
+
+  const handleRefresh = useCallback(async () => {
+    seedRef.current += 1;
+    await refetch();
+    setRefreshKey((k) => k + 1); // remount the appended infinite rails for the new variant
+  }, [refetch]);
 
   // Hold a single boot loader over the page until the hero's first image is
   // ready, so the first thing you see is a populated screen — not a wall of
@@ -54,6 +65,7 @@ export function HomeFeed() {
   return (
     <>
       <BootSplash show={isLoading || !booted} />
+      {data && booted && <PullToRefresh onRefresh={handleRefresh} />}
       {data && (
         <div className="pb-24">
           {data.hero.length > 0 && <Hero slides={data.hero} onReady={reveal} />}
@@ -61,7 +73,7 @@ export function HomeFeed() {
             {data.rails.map((rail) => (
               <Rail key={rail.id} rail={rail} />
             ))}
-            {data.rails.length > 0 && <InfiniteRails />}
+            {data.rails.length > 0 && <InfiniteRails key={refreshKey} />}
             {data.rails.length === 0 && (
               <CenteredCard
                 icon={<SettingsIcon className="h-10 w-10 text-muted-foreground" />}

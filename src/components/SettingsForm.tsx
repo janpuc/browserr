@@ -1,7 +1,9 @@
 "use client";
 
-import { Github, Info, Loader2, Lock, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { Github, Info, Loader2, Lock, RotateCcw, X } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useConfig } from "@/components/providers/config";
 import { RegionServicePicker } from "@/components/RegionServicePicker";
 import { Button } from "@/components/ui/button";
@@ -21,7 +23,20 @@ const ACCENT_PRESETS: { name: string; value: string }[] = [
 export function SettingsForm() {
   const { config, refresh } = useConfig();
   const { toast } = useToast();
+  const router = useRouter();
   const locked = config.core.lockConfig;
+
+  // Esc leaves Settings — unless you're editing a field.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      router.push("/");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router]);
 
   // Non-secret draft is seeded from the public config.
   const [region, setRegion] = useState(config.region.region);
@@ -120,7 +135,7 @@ export function SettingsForm() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 pb-32 pt-24 md:px-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-black">Settings</h1>
@@ -128,6 +143,12 @@ export function SettingsForm() {
           </div>
           <p className="text-sm text-muted-foreground">Connect your stack and tune your experience.</p>
         </div>
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm font-semibold transition hover:bg-white/10"
+        >
+          <X className="h-4 w-4" /> Done
+        </Link>
       </div>
 
       {locked && (

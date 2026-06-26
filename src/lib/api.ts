@@ -43,7 +43,7 @@ const realApi = {
       `/api/services${region ? `?region=${encodeURIComponent(region)}` : ""}`,
     ),
 
-  getHome: () => fetchJson<HomeFeed>("/api/home"),
+  getHome: (variant = 0) => fetchJson<HomeFeed>(`/api/home${variant ? `?v=${variant}` : ""}`),
   getRails: (page: number) =>
     fetchJson<{ rails: Rail[]; hasMore: boolean }>(`/api/rails?page=${page}`),
   getTitle: (type: MediaType, id: number) => fetchJson<TitleResponse>(`/api/title/${type}/${id}`),

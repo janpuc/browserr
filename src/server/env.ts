@@ -111,6 +111,8 @@ export function readEnvConfig(): DeepPartial<BrowserrConfig> {
       enableLibraryRails: bool(e.ENABLE_LIBRARY_RAILS),
       enableTrailerAutoplay: bool(e.ENABLE_TRAILER_AUTOPLAY),
       heroRotateSeconds: int(e.HERO_ROTATE_SECONDS),
+      hoverExpandMs: int(e.HOVER_EXPAND_MS),
+      mobileAutoExpand: bool(e.MOBILE_AUTO_EXPAND),
     },
     appearance: {
       theme: oneOf<Theme>(e.BROWSERR_THEME, THEMES),

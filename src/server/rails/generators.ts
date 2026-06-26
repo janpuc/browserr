@@ -12,13 +12,54 @@ import { getSeerr } from "../seerr/client";
 import { getTmdb } from "../tmdb/client";
 import { mapLimit } from "../util/concurrency";
 
-const GENRE_PICKS = ["Action", "Comedy", "Drama", "Science Fiction", "Thriller", "Animation"];
+const GENRE_PICKS = [
+  "Action",
+  "Comedy",
+  "Drama",
+  "Science Fiction",
+  "Thriller",
+  "Animation",
+  "Horror",
+  "Romance",
+  "Adventure",
+  "Mystery",
+  "Fantasy",
+  "Family",
+];
 
 function daysAgo(days: number): string {
   return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 }
 function today(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+/** Deterministic PRNG so a given refresh "variant" is stable but each differs. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const rng = mulberry32(seed + 1);
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function rotate<T>(arr: T[], by: number): T[] {
+  if (arr.length === 0) return arr;
+  const n = ((by % arr.length) + arr.length) % arr.length;
+  return [...arr.slice(n), ...arr.slice(0, n)];
 }
 
 /** Fetch card summaries for Seerr/library refs via (cached) TMDB detail. */
@@ -99,13 +140,21 @@ function applyRailPrefs(rails: Rail[], prefs: RailPrefs): Rail[] {
  * Compose the ordered home feed. Each rail builder is independent and degrades
  * to null on error, so one failing source never blanks the page.
  */
-export async function buildHomeFeed(userId: string): Promise<HomeFeed> {
+export async function buildHomeFeed(userId: string, variant = 0): Promise<HomeFeed> {
   const cfg = await getConfig();
   const region = cfg.region.region;
   const monetization = cfg.region.monetizationTypes;
   const { selectedIds, selected } = await resolveActiveServices();
   const providers = selectedIds.length ? selectedIds : undefined;
   const tmdb = await getTmdb();
+
+  // Refresh variation: a non-zero variant pulls a different TMDB page, rotates
+  // featured genres, flips the trending window and reshuffles — so each refresh
+  // surfaces something different rather than the same feed.
+  const v = Math.abs(Math.trunc(variant)) || 0;
+  const page = (v % 5) + 1;
+  const trendWindow: "day" | "week" = v % 2 === 0 ? "day" : "week";
+  const vary = <T,>(arr: T[]): T[] => (v ? seededShuffle(arr, v) : arr);
 
   const std = (
     id: string,
@@ -116,10 +165,10 @@ export async function buildHomeFeed(userId: string): Promise<HomeFeed> {
   ): Rail | null => (items.length >= 4 ? { id, title, kind, items, context } : null);
 
   // ── kick off the non-personalized fetches in parallel ──────────────────────
-  const trendingP = tmdb.trending("all", "day").catch(() => [] as MediaSummary[]);
+  const trendingP = tmdb.trending("all", trendWindow).catch(() => [] as MediaSummary[]);
   const genreMapP = tmdb.genreMap("movie").catch(() => ({}) as Record<number, string>);
   const top10P = tmdb
-    .discover("movie", { region, providers, monetization, minVotes: 50 })
+    .discover("movie", { region, providers, monetization, minVotes: 50, page })
     .catch(() => [] as MediaSummary[]);
   const recentP = tmdb
     .discover("movie", {
@@ -129,6 +178,7 @@ export async function buildHomeFeed(userId: string): Promise<HomeFeed> {
       sortBy: "primary_release_date.desc",
       releaseDateLte: today(),
       minVotes: 5,
+      page,
     })
     .catch(() => [] as MediaSummary[]);
 
@@ -161,7 +211,7 @@ export async function buildHomeFeed(userId: string): Promise<HomeFeed> {
     libraryP,
   ]);
 
-  const hero = await buildHero(trending.length ? trending : top10pool, 5);
+  const hero = await buildHero(vary(trending.length ? trending : top10pool), 5);
 
   // ── "Because you watched" rails ────────────────────────────────────────────
   const becauseRails = (
@@ -182,6 +232,7 @@ export async function buildHomeFeed(userId: string): Promise<HomeFeed> {
           releaseDateGte: daysAgo(150),
           releaseDateLte: today(),
           minVotes: 3,
+          page,
         });
         return std(`service-${svc.providerId}`, `New on ${svc.name}`, items, "service", {
           serviceId: svc.providerId,
@@ -194,9 +245,9 @@ export async function buildHomeFeed(userId: string): Promise<HomeFeed> {
 
   // ── Genre rails ────────────────────────────────────────────────────────────
   const nameToId = new Map(Object.entries(genreMap).map(([id, name]) => [name, Number(id)]));
-  const genreTargets = GENRE_PICKS.map((n) => ({ name: n, id: nameToId.get(n) })).filter(
-    (g): g is { name: string; id: number } => g.id !== undefined,
-  );
+  const genreTargets = rotate(GENRE_PICKS, v)
+    .map((n) => ({ name: n, id: nameToId.get(n) }))
+    .filter((g): g is { name: string; id: number } => g.id !== undefined);
   const genreRails = (
     await mapLimit(genreTargets.slice(0, 5), 2, async (g) => {
       try {
@@ -206,6 +257,7 @@ export async function buildHomeFeed(userId: string): Promise<HomeFeed> {
           monetization,
           genres: [g.id],
           minVotes: 50,
+          page,
         });
         return std(`genre-${g.id}`, g.name, items, "genre", { genreId: g.id });
       } catch {
@@ -217,7 +269,7 @@ export async function buildHomeFeed(userId: string): Promise<HomeFeed> {
   // ── Assemble in default order ──────────────────────────────────────────────
   const ordered: (Rail | null)[] = [
     std("library", "Available Now in Your Library", library, "library"),
-    std("trending", "Trending Now", trending, "standard"),
+    std("trending", "Trending Now", vary(trending), "standard"),
     ...becauseRails,
     top10pool.length >= 10
       ? {

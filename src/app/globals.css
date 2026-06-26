@@ -48,7 +48,7 @@ html {
      own scroll containers, so this only kills accidental page-level drift and
      trackpad jitter from anything that bleeds a hair past the viewport. */
   overflow-x: hidden;
-  overscroll-behavior-x: none;
+  overscroll-behavior: none;
 }
 
 body {
@@ -60,7 +60,7 @@ body {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
-  overscroll-behavior-x: none;
+  overscroll-behavior: none;
 }
 
 /* Hide scrollbars on horizontal rails while keeping them scrollable. */
@@ -114,4 +114,12 @@ body {
 :focus-visible {
   outline: 2px solid hsl(var(--accent));
   outline-offset: 2px;
+}
+
+/* Form fields manage their own focus affordance (a soft ring/border), so the
+   bold accent outline doesn't box them in — it stays for buttons/links/cards. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
 }

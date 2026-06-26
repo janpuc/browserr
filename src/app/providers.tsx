@@ -5,6 +5,7 @@ import { useState } from "react";
 import { AvailabilityProvider } from "@/components/providers/availability";
 import { ConfigProvider } from "@/components/providers/config";
 import { DetailProvider } from "@/components/providers/detail";
+import { ShortcutsProvider } from "@/components/providers/shortcuts";
 import { ToastProvider } from "@/components/ui/toast";
 import type { PublicConfig } from "@/lib/config";
 
@@ -29,7 +30,9 @@ export function Providers({
       <ConfigProvider initial={initialConfig}>
         <ToastProvider>
           <AvailabilityProvider>
-            <DetailProvider>{children}</DetailProvider>
+            <ShortcutsProvider>
+              <DetailProvider>{children}</DetailProvider>
+            </ShortcutsProvider>
           </AvailabilityProvider>
         </ToastProvider>
       </ConfigProvider>

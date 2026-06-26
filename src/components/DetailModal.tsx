@@ -1,10 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { AnimatePresence, motion } from "framer-motion";
+import { animate, AnimatePresence, motion, useMotionValue } from "framer-motion";
 import { Check, HelpCircle, Play, Plus, Star, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAvailabilityStore } from "@/components/providers/availability";
 import { useDetail } from "@/components/providers/detail";
 import { TrailerPlayer } from "@/components/TrailerPlayer";
@@ -26,40 +26,96 @@ export function DetailModal({
   target: { type: MediaType; id: number } | null;
   onClose: () => void;
 }) {
+  return (
+    <AnimatePresence>{target && <ModalShell target={target} onClose={onClose} />}</AnimatePresence>
+  );
+}
+
+function ModalShell({
+  target,
+  onClose,
+}: {
+  target: { type: MediaType; id: number };
+  onClose: () => void;
+}) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const y = useMotionValue(40);
+  const drag = useRef<{ startY: number; atTop: boolean } | null>(null);
+
+  // Slide-up entry.
   useEffect(() => {
-    if (!target) return;
+    const controls = animate(y, 0, { type: "tween", duration: 0.22, ease: "easeOut" });
+    return () => controls.stop();
+  }, [y]);
+
+  // Esc + a robust background scroll lock. position:fixed (not overflow:hidden)
+  // is the only thing that reliably stops iOS Safari from scrolling the page
+  // behind the modal; we restore the scroll offset on close.
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const prev = body.style.cssText;
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      body.style.cssText = prev;
+      window.scrollTo(0, scrollY);
     };
-  }, [target, onClose]);
+  }, [onClose]);
+
+  // Swipe down to dismiss — but only when the content is scrolled to the top,
+  // so it never fights normal scrolling.
+  const onTouchStart = (e: React.TouchEvent) => {
+    drag.current = { startY: e.touches[0].clientY, atTop: (scroller.current?.scrollTop ?? 0) <= 0 };
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    const d = drag.current;
+    if (!d) return;
+    const delta = e.touches[0].clientY - d.startY;
+    if (d.atTop && delta > 0) {
+      y.set(delta * 0.7);
+    } else if (y.get() !== 0) {
+      y.set(0);
+      drag.current = null;
+    }
+  };
+  const onTouchEnd = () => {
+    if (y.get() > 110) onClose();
+    else animate(y, 0, { type: "tween", duration: 0.18 });
+    drag.current = null;
+  };
 
   return (
-    <AnimatePresence>
-      {target && (
-        <motion.div
-          className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/80 p-0 backdrop-blur-sm md:p-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <motion.div
-            className="relative w-full max-w-4xl overflow-hidden rounded-none bg-card shadow-2xl md:rounded-xl"
-            initial={{ y: 24, opacity: 0, scale: 0.98 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 24, opacity: 0 }}
-            transition={{ type: "tween", duration: 0.2 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <DetailContent key={`${target.type}:${target.id}`} type={target.type} id={target.id} onClose={onClose} />
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <motion.div
+      className="fixed inset-0 z-[100] flex items-start justify-center bg-black/80 backdrop-blur-sm md:p-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        ref={scroller}
+        style={{ y }}
+        exit={{ opacity: 0 }}
+        className="relative max-h-[100dvh] w-full max-w-4xl overflow-y-auto overscroll-contain rounded-none bg-card shadow-2xl md:max-h-[92vh] md:rounded-xl"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        {/* Mobile grab handle — signals "pull down to close". */}
+        <div className="sticky top-0 z-30 -mb-5 flex justify-center pt-2.5 md:hidden">
+          <span className="h-1 w-10 rounded-full bg-white/40" />
+        </div>
+        <DetailContent key={`${target.type}:${target.id}`} type={target.type} id={target.id} onClose={onClose} />
+      </motion.div>
+    </motion.div>
   );
 }
 

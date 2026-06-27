@@ -75,7 +75,7 @@ async function coldStartVector(): Promise<Vector> {
       return unit(vector);
     }
 
-    // No library signal — use popularity in the active region/services.
+    // No library signal - use popularity in the active region/services.
     const tmdb = await getTmdb();
     const providers = selectedIds.length ? selectedIds : undefined;
     const pop = await tmdb.discover("movie", {
@@ -211,7 +211,7 @@ export async function becauseYouWatched(
   };
 }
 
-/** Human-readable "Why am I seeing this?" — top overlapping features. */
+/** Human-readable "Why am I seeing this?" - top overlapping features. */
 export async function explainRecommendation(
   userId: string,
   tmdbId: number,

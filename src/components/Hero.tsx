@@ -33,7 +33,7 @@ export function Hero({ slides, onReady }: { slides: HeroSlide[]; onReady?: () =>
     return () => clearInterval(t);
   }, [playing, slides.length, rotateSeconds]);
 
-  // If the first slide has no backdrop image, there's nothing to wait for —
+  // If the first slide has no backdrop image, there's nothing to wait for -
   // tell the boot splash we're ready immediately.
   useEffect(() => {
     const first = slides[0]?.item;

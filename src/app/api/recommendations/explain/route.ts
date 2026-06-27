@@ -6,7 +6,7 @@ import type { MediaType } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** "Why am I seeing this?" — the top features linking a title to your taste. */
+/** "Why am I seeing this?" - the top features linking a title to your taste. */
 export async function GET(req: Request) {
   return handle(async () => {
     const url = new URL(req.url);

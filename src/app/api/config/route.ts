@@ -19,7 +19,7 @@ export async function PUT(req: Request) {
     const body = await req.json().catch(() => ({}));
     await saveSettings(body);
 
-    // Region/service changes must re-derive the catalog — drop dependent caches.
+    // Region/service changes must re-derive the catalog - drop dependent caches.
     if (body?.region) {
       cacheClearPrefix("region:");
       cacheClearPrefix("tmdb:/discover");

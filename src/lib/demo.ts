@@ -2,7 +2,7 @@
  * Demo mode: a fully static, keyless build for the public showcase. When
  * `NEXT_PUBLIC_DEMO=1`, `lib/api` swaps the live BFF for this fixture-backed
  * client. Catalog data + images come from bundled JSON snapshots under
- * `public/demo/` (public TMDB data only — no secrets, no Seerr, no DB).
+ * `public/demo/` (public TMDB data only - no secrets, no Seerr, no DB).
  */
 import type { Api } from "./api";
 import type { PublicConfig } from "./config";
@@ -32,13 +32,7 @@ export const DEMO_PUBLIC_CONFIG: PublicConfig = {
   region: { region: "US", services: [], monetizationTypes: ["flatrate"] },
   auth: { mode: "none" },
   recs: { enableRecommendations: true, enableEmbeddings: false },
-  features: {
-    enableLibraryRails: true,
-    enableTrailerAutoplay: true,
-    heroRotateSeconds: 12,
-    hoverExpandMs: 900,
-    mobileAutoExpand: true,
-  },
+  features: { enableLibraryRails: true, heroRotateSeconds: 12 },
   appearance: { theme: "dark", accent: "0 72% 51%" },
 };
 
@@ -192,7 +186,7 @@ export const demoApi: Api = {
   request: disabled("Requests"),
   signal: async () => ({ ok: true }),
   explain: async () => ({
-    reasons: ["This is a static demo — recommendations aren't personalized here."],
+    reasons: ["This is a static demo - recommendations aren't personalized here."],
   }),
   resetTaste: async () => ({ ok: true }),
   search: async (q: string) => ({ results: await demoSearch(q) }),

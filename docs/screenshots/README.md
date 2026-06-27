@@ -5,7 +5,7 @@ exact names (≈1440×900, retina/2× looks best):
 
 | File | What to capture |
 |---|---|
-| `home.png` | The home page — hero billboard + a couple of rails |
+| `home.png` | The home page - hero billboard + a couple of rails |
 | `detail.png` | A title's detail modal (backdrop, cast, "More Like This") |
 | `settings.png` | The Settings screen |
 | `mobile.png` | _(optional)_ the home page at a phone width (~390px) |

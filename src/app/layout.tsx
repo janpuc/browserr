@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   let config: PublicConfig;
   if (DEMO) {
-    // No DB, no cron, no secrets — the demo runs entirely on bundled fixtures.
+    // No DB, no cron, no secrets - the demo runs entirely on bundled fixtures.
     config = DEMO_PUBLIC_CONFIG;
   } else {
     // Server-only modules are imported lazily so they never enter the static
@@ -65,7 +65,7 @@ function DemoBadge() {
       className="fixed bottom-4 left-1/2 z-[90] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-border bg-background/90 px-4 py-2 text-xs font-semibold shadow-xl backdrop-blur transition hover:border-accent"
     >
       <span className="inline-flex h-2 w-2 rounded-full bg-accent" />
-      <span className="hidden sm:inline">Demo — requests &amp; settings are disabled</span>
+      <span className="hidden sm:inline">Demo - requests &amp; settings are disabled</span>
       <span className="sm:hidden">Demo</span>
       <span className="mx-0.5 h-3 w-px bg-border" />
       <Github className="h-3.5 w-3.5" /> janpuc/browserr

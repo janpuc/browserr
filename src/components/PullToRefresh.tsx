@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 const THRESHOLD = 70; // px of (damped) pull needed to trigger
 const MIN_SPIN = 650; // keep the spinner up at least this long, so it's visible
+const COOLDOWN = 1500; // lock-out after a refresh before another can be started
 
 /**
  * Pull down (touch) or scroll up past the very top (desktop wheel) to refresh.
@@ -19,6 +20,7 @@ export function PullToRefresh({ onRefresh }: { onRefresh: () => Promise<unknown>
   onRefreshRef.current = onRefresh;
 
   useEffect(() => {
+    let alive = true;
     const s = { pull: 0, startY: null as number | null, accum: 0, busy: false, pulling: false };
     const atTop = () => window.scrollY <= 0;
     const locked = () => document.body.style.position === "fixed";
@@ -58,13 +60,16 @@ export function PullToRefresh({ onRefresh }: { onRefresh: () => Promise<unknown>
       try {
         await onRefreshRef.current();
       } catch {
-        /* ignore — still give feedback */
+        /* ignore - still give feedback */
       }
       const wait = MIN_SPIN - (Date.now() - started);
       if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-      s.busy = false;
+      if (!alive) return;
       setRefreshing(false);
       render(0);
+      // Stay locked a beat longer so the user can't immediately fire another.
+      await new Promise((r) => setTimeout(r, COOLDOWN));
+      s.busy = false;
     };
 
     // ---- touch ----
@@ -118,6 +123,7 @@ export function PullToRefresh({ onRefresh }: { onRefresh: () => Promise<unknown>
     window.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("wheel", onWheel, { passive: true });
     return () => {
+      alive = false;
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);

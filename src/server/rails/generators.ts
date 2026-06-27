@@ -149,7 +149,7 @@ export async function buildHomeFeed(userId: string, variant = 0): Promise<HomeFe
   const tmdb = await getTmdb();
 
   // Refresh variation: a non-zero variant pulls a different TMDB page, rotates
-  // featured genres, flips the trending window and reshuffles — so each refresh
+  // featured genres, flips the trending window and reshuffles - so each refresh
   // surfaces something different rather than the same feed.
   const v = Math.abs(Math.trunc(variant)) || 0;
   const page = (v % 5) + 1;
@@ -293,10 +293,10 @@ export async function buildHomeFeed(userId: string, variant = 0): Promise<HomeFe
     std("recently-added", "Recently Added", recent, "standard"),
   ];
 
-  const rails = applyRailPrefs(
-    ordered.filter((r): r is Rail => r !== null),
-    await loadRailPrefs(userId),
-  );
+  // On a refresh (variant) shuffle the whole rail ORDER too - so "Available Now"
+  // and the rest move around, not just the items inside each rail.
+  const present = ordered.filter((r): r is Rail => r !== null);
+  const rails = applyRailPrefs(v ? seededShuffle(present, v * 7 + 1) : present, await loadRailPrefs(userId));
 
   log.info("home feed built", { userId, rails: rails.length, hero: hero.length });
   return { hero, rails };
@@ -304,18 +304,21 @@ export async function buildHomeFeed(userId: string, variant = 0): Promise<HomeFe
 
 // ── Infinite scroll: an ordered catalog of additional rails, paginated ────────
 
-interface RailSpec {
+interface RailTemplate {
   id: string;
   title: string;
   kind: Rail["kind"];
   context?: Rail["context"];
-  build: () => Promise<MediaSummary[]>;
+  build: (tmdbPage: number) => Promise<MediaSummary[]>;
 }
 
 const DECADES = [2020, 2010, 2000, 1990, 1980];
+// Cycle the template catalogue this many times (each cycle pulls a deeper TMDB
+// page), so the infinite feed keeps producing fresh rails - endless in practice.
+const MAX_INFINITE_CYCLES = 8;
 
-/** The full ordered list of extended rails (built lazily, page by page). */
-async function extraRailSpecs(): Promise<RailSpec[]> {
+/** The catalogue of extended-rail templates; each can be fetched at any TMDB page. */
+async function extraRailTemplates(): Promise<RailTemplate[]> {
   const cfg = await getConfig();
   const region = cfg.region.region;
   const monetization = cfg.region.monetizationTypes;
@@ -328,29 +331,29 @@ async function extraRailSpecs(): Promise<RailSpec[]> {
     tmdb.getGenres("tv").catch(() => []),
   ]);
 
-  const specs: RailSpec[] = [
+  const templates: RailTemplate[] = [
     {
       id: "top-rated",
       title: "Top Rated Movies",
       kind: "standard",
-      build: () =>
-        tmdb.discover("movie", { region, providers, monetization, sortBy: "vote_average.desc", minVotes: 500 }),
+      build: (p) =>
+        tmdb.discover("movie", { region, providers, monetization, sortBy: "vote_average.desc", minVotes: 500, page: p }),
     },
     {
       id: "top-rated-tv",
       title: "Top Rated Shows",
       kind: "standard",
-      build: () =>
-        tmdb.discover("tv", { region, providers, monetization, sortBy: "vote_average.desc", minVotes: 300 }),
+      build: (p) =>
+        tmdb.discover("tv", { region, providers, monetization, sortBy: "vote_average.desc", minVotes: 300, page: p }),
     },
   ];
 
   for (const d of DECADES) {
-    specs.push({
+    templates.push({
       id: `decade-${d}`,
       title: `${d}s`,
       kind: "standard",
-      build: () =>
+      build: (p) =>
         tmdb.discover("movie", {
           region,
           providers,
@@ -358,30 +361,31 @@ async function extraRailSpecs(): Promise<RailSpec[]> {
           releaseDateGte: `${d}-01-01`,
           releaseDateLte: `${d + 9}-12-31`,
           minVotes: 100,
+          page: p,
         }),
     });
   }
 
   const picked = new Set(GENRE_PICKS);
   for (const g of movieGenres.filter((x) => !picked.has(x.name))) {
-    specs.push({
+    templates.push({
       id: `genre-x-${g.id}`,
       title: g.name,
       kind: "genre",
       context: { genreId: g.id },
-      build: () => tmdb.discover("movie", { region, providers, monetization, genres: [g.id], minVotes: 50 }),
+      build: (p) => tmdb.discover("movie", { region, providers, monetization, genres: [g.id], minVotes: 50, page: p }),
     });
   }
   for (const g of tvGenres) {
-    specs.push({
+    templates.push({
       id: `tv-genre-${g.id}`,
       title: `${g.name} · TV`,
       kind: "genre",
       context: { genreId: g.id },
-      build: () => tmdb.discover("tv", { region, providers, monetization, genres: [g.id], minVotes: 30 }),
+      build: (p) => tmdb.discover("tv", { region, providers, monetization, genres: [g.id], minVotes: 30, page: p }),
     });
   }
-  return specs;
+  return templates;
 }
 
 export interface ExtraRailsPage {
@@ -389,28 +393,39 @@ export interface ExtraRailsPage {
   hasMore: boolean;
 }
 
-/** Build one page of extended rails (4 per page by default) for infinite scroll. */
+/**
+ * One page of extended rails for infinite scroll. We cycle the template
+ * catalogue; each full cycle pulls a deeper TMDB page (with a reshuffled order)
+ * so the feed keeps yielding fresh rails until MAX_INFINITE_CYCLES.
+ */
 export async function buildExtraRails(
   userId: string,
   page: number,
   pageSize = 4,
 ): Promise<ExtraRailsPage> {
-  const [specs, hidden] = await Promise.all([extraRailSpecs(), getHiddenTitleIds(userId)]);
-  const start = Math.max(0, page - 1) * pageSize;
-  const slice = specs.slice(start, start + pageSize);
+  const [templates, hidden] = await Promise.all([extraRailTemplates(), getHiddenTitleIds(userId)]);
+  if (templates.length === 0) return { rails: [], hasMore: false };
 
-  const built = await mapLimit(slice, 3, async (spec): Promise<Rail | null> => {
+  const start = Math.max(0, page - 1) * pageSize;
+  const indices = Array.from({ length: pageSize }, (_, i) => start + i);
+
+  const built = await mapLimit(indices, 3, async (railIndex): Promise<Rail | null> => {
+    const cycle = Math.floor(railIndex / templates.length);
+    if (cycle >= MAX_INFINITE_CYCLES) return null;
+    const order = cycle === 0 ? templates : seededShuffle(templates, cycle * 31 + 7);
+    const tmpl = order[railIndex % templates.length];
     try {
-      const items = (await spec.build()).filter((i) => !hidden.has(i.id));
+      const items = (await tmpl.build(cycle + 1)).filter((i) => !hidden.has(i.id));
       if (items.length < 4) return null;
-      return { id: spec.id, title: spec.title, kind: spec.kind, items, context: spec.context };
+      return { id: `${tmpl.id}-c${cycle}`, title: tmpl.title, kind: tmpl.kind, items, context: tmpl.context };
     } catch {
       return null;
     }
   });
 
+  const nextCycle = Math.floor((start + pageSize) / templates.length);
   return {
     rails: built.filter((r): r is Rail => r !== null),
-    hasMore: start + pageSize < specs.length,
+    hasMore: nextCycle < MAX_INFINITE_CYCLES,
   };
 }

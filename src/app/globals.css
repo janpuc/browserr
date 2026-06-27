@@ -117,7 +117,7 @@ body {
 }
 
 /* Form fields manage their own focus affordance (a soft ring/border), so the
-   bold accent outline doesn't box them in — it stays for buttons/links/cards. */
+   bold accent outline doesn't box them in - it stays for buttons/links/cards. */
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {

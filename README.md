@@ -9,11 +9,11 @@
 **A self-hosted, Netflix-style discovery front-end for your media stack.**
 
 > ### ▶️ [**Live demo →**](https://janpuc.github.io/browserr/)
-> A keyless, read-only tour running on static fixtures — no TMDB key, no database, no requests.
+> A keyless, read-only tour running on static fixtures - no TMDB key, no database, no requests.
 
-Browserr turns _"what can I watch?"_ into a cinematic browse experience — rotating hero
+Browserr turns _"what can I watch?"_ into a cinematic browse experience - rotating hero
 billboards, genre and per-service rails, "Because you watched…" recommendations, and inline
-hover trailers — across every streaming service available in your region. When you find
+hover trailers - across every streaming service available in your region. When you find
 something you don't have yet, it hands off to **[Seerr](https://github.com/seerr-team/seerr)**
 for "what's in my library" status and requests.
 
@@ -23,20 +23,20 @@ The name follows the `*arr`/Seerr convention: a **browser** for everything you c
 
 ## Features
 
-- **Netflix-style home** — full-bleed rotating hero, lazy horizontally-scrolling rails,
+- **Netflix-style home** - full-bleed rotating hero, lazy horizontally-scrolling rails,
   hover-preview cards with muted trailer autoplay, and a rich detail modal.
-- **Region & service aware** — only ever shows streaming services that TMDB lists for your
+- **Region & service aware** - only ever shows streaming services that TMDB lists for your
   selected region. Change region → the whole catalog and service list re-derive.
-- **Seerr integration** — every title shows live library availability; request via redirect
+- **Seerr integration** - every title shows live library availability; request via redirect
   (open Seerr) or proxy (submit on your behalf). Uses a **separate internal URL** for
   server-to-server calls and **external URL** for browser redirects.
-- **Self-learning recommendations** — a content-based taste profile that seeds from your
+- **Self-learning recommendations** - a content-based taste profile that seeds from your
   library at cold-start and shifts as you interact. Includes "Because you watched X" rails and
   a "Why am I seeing this?" affordance.
-- **Config via GUI _and_ env** — env seeds defaults; the in-app Settings screen overrides
+- **Config via GUI _and_ env** - env seeds defaults; the in-app Settings screen overrides
   them (unless `LOCK_CONFIG=true`). No secrets or internal URLs ever reach the browser.
-- **One Docker image** — drops into an existing `*arr`/Seerr stack via `docker-compose`.
-- **Accessible & responsive** — keyboard/remote navigable, reduced-motion honored,
+- **One Docker image** - drops into an existing `*arr`/Seerr stack via `docker-compose`.
+- **Accessible & responsive** - keyboard/remote navigable, reduced-motion honored,
   dark-first theming with a configurable accent. Works desktop → tablet → mobile → 10-foot TV.
 
 ---
@@ -89,7 +89,7 @@ npm run dev               # http://localhost:3000
 ```
 
 You only need a [TMDB API key](https://www.themoviedb.org/settings/api) to start browsing.
-Seerr is optional — without it the catalog still browses and availability badges show
+Seerr is optional - without it the catalog still browses and availability badges show
 "Unknown".
 
 > **Build/run note:** the production image runs the Next.js standalone server
@@ -102,7 +102,7 @@ Seerr is optional — without it the catalog still browses and availability badg
 
 **Precedence (lowest → highest):** built-in defaults → **environment variables** → **GUI
 settings (persisted in SQLite)**. The GUI overrides env. Setting `LOCK_CONFIG=true` freezes
-config to env values and makes the GUI read-only — for locked-down deployments.
+config to env values and makes the GUI read-only - for locked-down deployments.
 
 Everything is editable in the in-app **Settings** screen: connections (TMDB, Seerr), region,
 services, feature toggles, and appearance. `DATABASE_URL`/`REDIS_URL` are env-only (they're
@@ -116,20 +116,20 @@ needed to reach the DB itself).
 | `PUBLIC_URL` | `http://localhost:3000` | External URL of Browserr itself |
 | `TZ` | `UTC` | Timezone |
 | `LOCK_CONFIG` | `false` | `true` ⇒ env is authoritative, GUI read-only |
-| `TMDB_API_KEY` | — | TMDB v3 key (or…) |
-| `TMDB_ACCESS_TOKEN` | — | …TMDB v4 bearer token |
+| `TMDB_API_KEY` | - | TMDB v3 key (or…) |
+| `TMDB_ACCESS_TOKEN` | - | …TMDB v4 bearer token |
 | `TMDB_LANGUAGE` | `en-US` | Drives metadata language + title logos |
-| `SEERR_INTERNAL_URL` | — | **Server-to-server** base (e.g. `http://seerr:5055`). Never sent to the client. |
-| `SEERR_EXTERNAL_URL` | — | **Browser redirect** base (your public Seerr URL) |
-| `SEERR_API_KEY` | — | `X-Api-Key` for Seerr |
+| `SEERR_INTERNAL_URL` | - | **Server-to-server** base (e.g. `http://seerr:5055`). Never sent to the client. |
+| `SEERR_EXTERNAL_URL` | - | **Browser redirect** base (your public Seerr URL) |
+| `SEERR_API_KEY` | - | `X-Api-Key` for Seerr |
 | `SEERR_REQUEST_MODE` | `redirect` | `redirect` \| `proxy` |
 | `DEFAULT_REGION` | `US` | ISO 3166-1 alpha-2 |
 | `DEFAULT_SERVICES` | _(all)_ | CSV of TMDB provider IDs, e.g. `8,9,337` |
 | `MONETIZATION_TYPES` | `flatrate` | CSV of `flatrate,free,ads,rent,buy` |
 | `AUTH_MODE` | `none` | `none` \| `seerr` \| `basic` |
-| `BASIC_AUTH_USER` / `BASIC_AUTH_PASS` | — | Used when `AUTH_MODE=basic` |
+| `BASIC_AUTH_USER` / `BASIC_AUTH_PASS` | - | Used when `AUTH_MODE=basic` |
 | `DATABASE_URL` | `sqlite://./data/browserr.db` | `sqlite://…` path (env-only) |
-| `REDIS_URL` | — | Optional (LRU cache is the default) |
+| `REDIS_URL` | - | Optional (LRU cache is the default) |
 | `ENABLE_RECOMMENDATIONS` | `true` | Self-learning rails |
 | `ENABLE_EMBEDDINGS` | `false` | Reserved for optional semantic recs |
 | `RECS_REFRESH_CRON` | `0 */6 * * *` | Refresh cadence (hour-interval honored) |
@@ -140,7 +140,7 @@ needed to reach the DB itself).
 ### ⚠️ The internal/external Seerr split (mandatory)
 
 `SEERR_INTERNAL_URL` is used by Browserr's **server** for all `/api/v1` calls (availability
-lookups, proxied requests) — typically a Docker-network address. `SEERR_EXTERNAL_URL` is used
+lookups, proxied requests) - typically a Docker-network address. `SEERR_EXTERNAL_URL` is used
 **only** to build links the user's **browser** opens. The internal URL is never exposed to the
 client: `/api/config` omits it entirely, and the Settings form treats it as a write-only field.
 
@@ -150,7 +150,7 @@ client: `/api/config` omits it entirely, and the Settings form treats it as a wr
 
 1. The region picker is populated from TMDB `GET /watch/providers/regions`.
 2. For the selected region, Browserr fetches movie + TV watch providers and shows the
-   **union (deduped by `provider_id`, ordered by `display_priority`)** — and nothing else.
+   **union (deduped by `provider_id`, ordered by `display_priority`)** - and nothing else.
 3. You multi-select the services you subscribe to (or "All"). These are stored as TMDB
    provider IDs and are always **intersected with what's actually available in the region**, so
    a stale ID can never leak into queries.
@@ -239,7 +239,7 @@ servers, native mobile apps (PWA-ready), and household blended profiles.
 ## Demo build
 
 The **[live demo](https://janpuc.github.io/browserr/)** is a static export served from GitHub
-Pages — no TMDB key, no Seerr, no database. It runs on bundled JSON snapshots under
+Pages - no TMDB key, no Seerr, no database. It runs on bundled JSON snapshots under
 `public/demo/` (public TMDB catalog data + image URLs only); requests and settings are
 disabled. Build it yourself with `npm run build:demo` (output in `out/`), and refresh the
 fixtures from a running dev server with `npm run demo:fixtures`.

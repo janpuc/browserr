@@ -26,7 +26,7 @@ export function SettingsForm() {
   const router = useRouter();
   const locked = config.core.lockConfig;
 
-  // Esc leaves Settings — unless you're editing a field.
+  // Esc leaves Settings - unless you're editing a field.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
@@ -46,7 +46,6 @@ export function SettingsForm() {
   const [externalUrl, setExternalUrl] = useState(config.seerr.externalUrl);
   const [requestMode, setRequestMode] = useState(config.seerr.requestMode);
   const [enableLibraryRails, setLibraryRails] = useState(config.features.enableLibraryRails);
-  const [enableTrailerAutoplay, setTrailerAutoplay] = useState(config.features.enableTrailerAutoplay);
   const [heroRotate, setHeroRotate] = useState(config.features.heroRotateSeconds);
   const [enableRecs, setEnableRecs] = useState(config.recs.enableRecommendations);
   const [theme, setTheme] = useState(config.appearance.theme);
@@ -84,7 +83,7 @@ export function SettingsForm() {
     },
     region: { region, services, monetizationTypes: monetization as never },
     recs: { enableRecommendations: enableRecs },
-    features: { enableLibraryRails, enableTrailerAutoplay, heroRotateSeconds: heroRotate },
+    features: { enableLibraryRails, heroRotateSeconds: heroRotate },
     appearance: { theme, accent },
   });
 
@@ -139,7 +138,7 @@ export function SettingsForm() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-black">Settings</h1>
-            <InfoHint text="Environment variables seed these fields. Changes you save here override them — unless LOCK_CONFIG is set, which makes every field read-only." />
+            <InfoHint text="Environment variables seed these fields. Changes you save here override them - unless LOCK_CONFIG is set, which makes every field read-only." />
           </div>
           <p className="text-sm text-muted-foreground">Connect your stack and tune your experience.</p>
         </div>
@@ -243,7 +242,6 @@ export function SettingsForm() {
 
       <Section title="Features">
         <ToggleRow label="Library rails (from Seerr)" checked={enableLibraryRails} onChange={setLibraryRails} disabled={locked} />
-        <ToggleRow label="Trailer autoplay on hover" checked={enableTrailerAutoplay} onChange={setTrailerAutoplay} disabled={locked} />
         <ToggleRow label="Self-learning recommendations" checked={enableRecs} onChange={setEnableRecs} disabled={locked} />
         <Field label={`Hero rotation: ${heroRotate}s`}>
           <input

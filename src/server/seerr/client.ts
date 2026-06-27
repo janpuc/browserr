@@ -80,7 +80,7 @@ export class SeerrClient {
   }
 
   /**
-   * Resolve library availability for a single title. Never throws — degrades to
+   * Resolve library availability for a single title. Never throws - degrades to
    * `{ known: false }` so the catalog keeps browsing if Seerr is unreachable.
    */
   async getAvailability(type: MediaType, tmdbId: number): Promise<Availability> {

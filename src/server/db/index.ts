@@ -7,7 +7,7 @@ import * as schema from "./schema";
 
 export type DB = LibSQLDatabase<typeof schema>;
 
-// Idempotent DDL — runs on first access. Keeps drizzle-kit optional for a
+// Idempotent DDL - runs on first access. Keeps drizzle-kit optional for a
 // zero-config homelab deploy. Column names mirror src/server/db/schema.ts.
 const DDL = `
 CREATE TABLE IF NOT EXISTS settings (
@@ -126,7 +126,7 @@ async function init(): Promise<Holder> {
 
 function holder(): Promise<Holder> {
   if (!globalForDb.__browserrDb) {
-    // Don't cache a rejected init — clear it so the next call can retry.
+    // Don't cache a rejected init - clear it so the next call can retry.
     globalForDb.__browserrDb = init().catch((err) => {
       globalForDb.__browserrDb = undefined;
       throw err;

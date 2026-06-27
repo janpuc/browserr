@@ -25,7 +25,7 @@ client**.
 
 ## Branch model (GitHub Flow)
 
-We keep it simple — trunk-based development:
+We keep it simple - trunk-based development:
 
 - **`main`** is always releasable and protected. No direct pushes.
 - Branch off `main` for every change: `feat/…`, `fix/…`, `docs/…`, `chore/…`.
@@ -39,7 +39,7 @@ Suggested branch protection for `main`:
 - Require branches to be up to date before merging.
 - Disallow force pushes and deletions.
 
-> A long-lived `develop` branch (git-flow) is intentionally **not** used — it's
+> A long-lived `develop` branch (git-flow) is intentionally **not** used - it's
 > overhead this project doesn't need. If you ever want a public pre-release lane,
 > add a `next` branch that publishes a `:next` image tag, rather than git-flow.
 
@@ -65,7 +65,7 @@ To cut a release:
 
 `npm run build:demo` produces a static, keyless export in `out/` (deployed to
 GitHub Pages by the **Deploy demo** workflow). It runs entirely on bundled JSON
-fixtures under `public/demo/` — no TMDB key, no Seerr, no database. Requests and
+fixtures under `public/demo/` - no TMDB key, no Seerr, no database. Requests and
 settings are disabled there.
 
 Regenerate fixtures from a running dev server (one with a real TMDB key):

@@ -106,7 +106,7 @@ export const MEDIA_STATUS = {
 export interface Availability {
   status: number; // Seerr mediaInfo.status (0/2/3/4/5); 0 = unknown/not found
   seasons?: Record<number, number>; // seasonNumber -> status (TV)
-  /** False when Seerr is unreachable/unconfigured — UI shows "unknown". */
+  /** False when Seerr is unreachable/unconfigured - UI shows "unknown". */
   known: boolean;
 }
 

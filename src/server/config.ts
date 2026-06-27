@@ -55,7 +55,7 @@ async function loadStored(id: string): Promise<StoredSettings> {
       .limit(1);
     return (rows[0]?.data as StoredSettings) ?? {};
   } catch (err) {
-    // Resilience: a DB hiccup must not take down config resolution — fall back
+    // Resilience: a DB hiccup must not take down config resolution - fall back
     // to env/defaults so the app still boots and the catalog still browses.
     log.error("failed to load settings; using env/defaults", { id, err: String(err) });
     return {};
@@ -69,7 +69,7 @@ async function loadStored(id: string): Promise<StoredSettings> {
  *
  * Note: env is treated as a live default layer rather than being copied into the
  * DB, so changing env still takes effect and the DB holds only explicit GUI
- * overrides — which is exactly "env seeds defaults; GUI overrides env".
+ * overrides - which is exactly "env seeds defaults; GUI overrides env".
  */
 export async function getConfig(userId?: string): Promise<BrowserrConfig> {
   const env = readEnvConfig();

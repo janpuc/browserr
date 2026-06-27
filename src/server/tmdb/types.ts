@@ -1,6 +1,6 @@
 import "server-only";
 
-/** Minimal raw TMDB shapes — only the fields Browserr consumes. */
+/** Minimal raw TMDB shapes - only the fields Browserr consumes. */
 
 export interface TmdbRegion {
   iso_3166_1: string;

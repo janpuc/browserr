@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * positioned. Images are `unoptimized` (we ship without sharp).
  *
  * The ref callback covers the case where a cached image finishes loading before
- * React attaches `onLoad` during hydration — otherwise it could stay invisible.
+ * React attaches `onLoad` during hydration - otherwise it could stay invisible.
  */
 export function BlurImage({ className, onLoad, onError, ...props }: ImageProps) {
   const [loaded, setLoaded] = useState(false);

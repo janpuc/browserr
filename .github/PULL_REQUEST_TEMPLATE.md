@@ -1,4 +1,4 @@
-<!-- Thanks for contributing to Browserr! Keep PRs focused — one logical change. -->
+<!-- Thanks for contributing to Browserr! Keep PRs focused - one logical change. -->
 
 ## What & why
 

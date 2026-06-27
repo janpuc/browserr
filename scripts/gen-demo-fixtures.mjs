@@ -4,7 +4,7 @@
 //   node scripts/gen-demo-fixtures.mjs            (defaults to 127.0.0.1:3000)
 //   BASE=http://localhost:3000 node scripts/gen-demo-fixtures.mjs
 //
-// Only public TMDB catalog data is captured — no secrets, no Seerr data.
+// Only public TMDB catalog data is captured - no secrets, no Seerr data.
 import { mkdirSync, writeFileSync } from "node:fs";
 
 const BASE = process.env.BASE ?? "http://127.0.0.1:3000";

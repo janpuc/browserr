@@ -31,7 +31,7 @@ export function HomeFeed() {
   }, [refetch]);
 
   // Hold a single boot loader over the page until the hero's first image is
-  // ready, so the first thing you see is a populated screen — not a wall of
+  // ready, so the first thing you see is a populated screen - not a wall of
   // shimmering placeholders. A safety timer guarantees we never hang.
   const [booted, setBooted] = useState(false);
   const reveal = useCallback(() => setBooted(true), []);

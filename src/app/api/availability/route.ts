@@ -16,7 +16,7 @@ const bodySchema = z.object({
     .max(60),
 });
 
-/** Batch availability lookup — used to hydrate badges progressively after paint. */
+/** Batch availability lookup - used to hydrate badges progressively after paint. */
 export async function POST(req: Request) {
   return handle(async () => {
     const body = bodySchema.parse(await req.json());

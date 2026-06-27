@@ -1,3 +1,3 @@
-# Browserr is a private, self-hosted app — discourage indexing by default.
+# Browserr is a private, self-hosted app - discourage indexing by default.
 User-agent: *
 Disallow: /

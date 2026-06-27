@@ -69,7 +69,7 @@ function ModalShell({
     };
   }, [onClose]);
 
-  // Swipe down to dismiss — but only when the content is scrolled to the top,
+  // Swipe down to dismiss - but only when the content is scrolled to the top,
   // so it never fights normal scrolling.
   const onTouchStart = (e: React.TouchEvent) => {
     drag.current = { startY: e.touches[0].clientY, atTop: (scroller.current?.scrollTop ?? 0) <= 0 };
@@ -109,7 +109,7 @@ function ModalShell({
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {/* Mobile grab handle — signals "pull down to close". */}
+        {/* Mobile grab handle - signals "pull down to close". */}
         <div className="sticky top-0 z-30 -mb-5 flex justify-center pt-2.5 md:hidden">
           <span className="h-1 w-10 rounded-full bg-white/40" />
         </div>

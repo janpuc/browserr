@@ -19,7 +19,7 @@ services:
       # These override .env to wire Browserr to the Seerr container by name.
       - DATABASE_URL=sqlite:///data/browserr.db
       - SEERR_INTERNAL_URL=http://seerr:5055
-      # SEERR_EXTERNAL_URL must be your browser-reachable Seerr address — set in .env.
+      # SEERR_EXTERNAL_URL must be your browser-reachable Seerr address - set in .env.
     volumes:
       - browserr-data:/data
     depends_on:

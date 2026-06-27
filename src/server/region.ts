@@ -14,7 +14,7 @@ export async function listRegions(): Promise<RegionOption[]> {
 }
 
 /**
- * The set of services that actually exist in a region — the union of movie and
+ * The set of services that actually exist in a region - the union of movie and
  * TV watch providers, deduped by provider_id and ordered by display_priority.
  *
  * This is the ONLY set Browserr will ever show for the region (acceptance

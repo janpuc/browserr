@@ -12,7 +12,7 @@ const ROOT = "out";
 const SHOTS = "docs/screenshots";
 
 if (!existsSync(ROOT)) {
-  console.error("No ./out — run `npm run build:demo` first.");
+  console.error("No ./out - run `npm run build:demo` first.");
   process.exit(1);
 }
 

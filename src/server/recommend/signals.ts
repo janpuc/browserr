@@ -29,7 +29,7 @@ export async function recordSignal(userId: string, input: SignalInput): Promise<
   }
 }
 
-/** Titles the user marked "not interested"/hidden — excluded from rails. */
+/** Titles the user marked "not interested"/hidden - excluded from rails. */
 export async function getHiddenTitleIds(userId: string): Promise<Set<number>> {
   const db = await getDb();
   const rows = await db
@@ -74,7 +74,7 @@ export async function getRecentStrongSignals(
   return out;
 }
 
-/** Titles already watched/requested — not re-recommended in taste rails. */
+/** Titles already watched/requested - not re-recommended in taste rails. */
 export async function getConsumedTitleIds(userId: string): Promise<Set<number>> {
   const db = await getDb();
   const rows = await db
@@ -89,7 +89,7 @@ export async function getConsumedTitleIds(userId: string): Promise<Set<number>> 
   return new Set(rows.map((r) => r.tmdbId));
 }
 
-/** "Forget me" — wipe signals + taste profile for the user. */
+/** "Forget me" - wipe signals + taste profile for the user. */
 export async function clearUserSignals(userId: string): Promise<void> {
   const db = await getDb();
   await db.delete(signalsTable).where(eq(signalsTable.userId, userId));

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommitTypeAll(chore)"
+  ],
+  "schedule": ["before 9am on monday"],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 9am on monday"]
+  },
+  "vulnerabilityAlerts": {
+    "labels": ["security"]
+  },
+  "packageRules": [
+    {
+      "description": "Group + automerge safe dev-dependency updates once CI is green",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "dev dependencies",
+      "automerge": true
+    },
+    {
+      "description": "Group + automerge non-major GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "groupName": "github-actions",
+      "automerge": true
+    },
+    {
+      "description": "Batch all non-major production dependency updates into one PR",
+      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "production dependencies"
+    },
+    {
+      "description": "Keep the React packages together",
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
+      "groupName": "react"
+    },
+    {
+      "description": "Keep the Next.js packages together",
+      "matchPackageNames": ["next", "@next/*", "eslint-config-next"],
+      "groupName": "next.js"
+    },
+    {
+      "description": "Major updates are opt-in from the dependency dashboard, never automerged",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "dependencyDashboardApproval": true
+    }
+  ]
+}

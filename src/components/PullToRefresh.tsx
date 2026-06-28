@@ -1,7 +1,9 @@
 "use client";
 
-import { ArrowDown, Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowDown } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { BrandSpinner } from "@/components/ui/BrandSpinner";
 
 const THRESHOLD = 70; // px of (damped) pull needed to trigger
 const MIN_SPIN = 650; // keep the spinner up at least this long, so it's visible
@@ -133,22 +135,20 @@ export function PullToRefresh({ onRefresh }: { onRefresh: () => Promise<unknown>
   }, []);
 
   const progress = Math.min(pull / THRESHOLD, 1);
-  const visible = pull > 2 || refreshing;
 
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none fixed inset-x-0 top-0 z-[60] flex justify-center"
-      style={{
-        transform: `translateY(${refreshing ? 16 : pull - 44}px)`,
-        opacity: visible ? 1 : 0,
-        transition: active ? "none" : "transform 0.3s ease, opacity 0.3s ease",
-      }}
-    >
-      <div className="mt-2 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card shadow-lg">
-        {refreshing ? (
-          <Loader2 className="h-4 w-4 animate-spin text-accent" />
-        ) : (
+    <>
+      {/* Pull-arrow pill: only while dragging, before the refresh fires. */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-x-0 top-0 z-[60] flex justify-center"
+        style={{
+          transform: `translateY(${pull - 44}px)`,
+          opacity: !refreshing && pull > 2 ? 1 : 0,
+          transition: active ? "none" : "transform 0.3s ease, opacity 0.3s ease",
+        }}
+      >
+        <div className="mt-2 flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card shadow-lg">
           <ArrowDown
             className="h-4 w-4 transition-transform"
             style={{
@@ -156,8 +156,25 @@ export function PullToRefresh({ onRefresh }: { onRefresh: () => Promise<unknown>
               color: progress >= 1 ? "hsl(var(--accent))" : "hsl(var(--muted-foreground))",
             }}
           />
-        )}
+        </div>
       </div>
-    </div>
+
+      {/* While the refresh runs, show the same branded loader as the initial
+          boot so a refresh reads as a fresh load. */}
+      <AnimatePresence>
+        {refreshing && (
+          <motion.div
+            key="refresh-splash"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-background"
+          >
+            <BrandSpinner />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

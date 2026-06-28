@@ -2,12 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, Clapperboard, Settings as SettingsIcon } from "lucide-react";
+import { AlertTriangle, Settings as SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Hero } from "@/components/Hero";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { Rail } from "@/components/Rail";
+import { BrandSpinner } from "@/components/ui/BrandSpinner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
@@ -104,16 +105,7 @@ function BootSplash({ show }: { show: boolean }) {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="fixed inset-0 z-[200] flex items-center justify-center bg-background"
         >
-          <div className="flex flex-col items-center gap-5">
-            <div className="relative h-16 w-16">
-              <span className="absolute inset-0 rounded-full border-2 border-muted" />
-              <span className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-accent" />
-              <Clapperboard className="absolute inset-0 m-auto h-7 w-7 text-accent" />
-            </div>
-            <span className="text-lg font-black tracking-tight">
-              Browse<span className="text-accent">rr</span>
-            </span>
-          </div>
+          <BrandSpinner />
         </motion.div>
       )}
     </AnimatePresence>

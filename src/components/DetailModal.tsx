@@ -65,7 +65,10 @@ function ModalShell({
     return () => {
       document.removeEventListener("keydown", onKey);
       body.style.cssText = prev;
-      window.scrollTo(0, scrollY);
+      // Restore instantly: `html { scroll-behavior: smooth }` would otherwise
+      // animate this back, and a mid-flight re-read (StrictMode remount) can
+      // capture ~0 and make the page jump to the top on close.
+      window.scrollTo({ top: scrollY, left: 0, behavior: "instant" as ScrollBehavior });
     };
   }, [onClose]);
 
@@ -103,7 +106,7 @@ function ModalShell({
         ref={scroller}
         style={{ y }}
         exit={{ opacity: 0 }}
-        className="relative max-h-[100dvh] w-full max-w-4xl overflow-y-auto overscroll-contain rounded-none bg-card shadow-2xl md:max-h-[92vh] md:rounded-xl"
+        className="relative max-h-[100dvh] w-full max-w-4xl overflow-y-auto overflow-x-hidden overscroll-contain rounded-none bg-card shadow-2xl md:max-h-[92vh] md:rounded-xl"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -214,7 +217,10 @@ function DetailContent({
       </div>
 
       <div className="grid gap-6 p-6 md:grid-cols-3">
-        <div className="md:col-span-2">
+        {/* min-w-0 lets these tracks shrink below their content so the inner
+            horizontal scrollers (cast, more-like-this) don't blow out the grid
+            and push the modal wider than the viewport on mobile. */}
+        <div className="min-w-0 md:col-span-2">
           <div className="mb-3 flex flex-wrap items-center gap-3 text-sm">
             {detail.voteAverage > 0 && (
               <span className="inline-flex items-center gap-1 font-semibold text-emerald-400">
@@ -264,7 +270,7 @@ function DetailContent({
           )}
         </div>
 
-        <aside className="space-y-5">
+        <aside className="min-w-0 space-y-5">
           <WhereToWatch watch={detail.watch} />
           {detail.genres.length > 0 && (
             <div>

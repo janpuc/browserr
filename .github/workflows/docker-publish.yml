@@ -1,12 +1,12 @@
-name: Publish image
+name: Edge image
 
-# Pushes a container image to GHCR:
-#   • push to main      → ghcr.io/janpuc/browserr:edge   (+ sha tag)
-#   • push tag vX.Y.Z   → :X.Y.Z, :X.Y, :latest
+# Bleeding-edge container image, rebuilt on every push to main:
+#   ghcr.io/janpuc/browserr:edge   (+ :sha-<short>)
+# Stable, versioned images (:X.Y.Z, :latest) are built by release.yml when a
+# Release Please PR is merged.
 on:
   push:
     branches: [main]
-    tags: ["v*.*.*"]
   workflow_dispatch:
 
 permissions:
@@ -14,8 +14,8 @@ permissions:
   packages: write
 
 concurrency:
-  group: publish-${{ github.ref }}
-  cancel-in-progress: false
+  group: edge-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   docker:
@@ -33,6 +33,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
       - name: Derive tags & labels
         id: meta
         uses: docker/metadata-action@v5
@@ -40,8 +44,6 @@ jobs:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=edge,branch=main
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
             type=sha,format=short
           labels: |
             org.opencontainers.image.title=Browserr
@@ -56,6 +58,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            BROWSERR_VERSION=${{ steps.meta.outputs.version }}
+            BROWSERR_VERSION=edge-${{ steps.sha.outputs.short }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

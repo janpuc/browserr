@@ -1,0 +1,81 @@
+name: Release
+
+# Hands-off releases via Release Please.
+#
+#   1. Every push to main, release-please reads the Conventional Commits since
+#      the last release and opens/updates a "release PR" that bumps the version
+#      in package.json and writes CHANGELOG.md.
+#   2. Merging that PR creates the git tag (vX.Y.Z) and the GitHub Release with
+#      generated notes - no manual tagging.
+#   3. Because the tag is created with GITHUB_TOKEN (which can't re-trigger other
+#      workflows), the release image is built right here in a chained job gated
+#      on `release_created`, rather than relying on a separate tag-push trigger.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.rp.outputs.release_created }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
+      version: ${{ steps.rp.outputs.version }}
+      major: ${{ steps.rp.outputs.major }}
+      minor: ${{ steps.rp.outputs.minor }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: rp
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  image:
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push release image (amd64 + arm64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ needs.release-please.outputs.version }}
+            ghcr.io/${{ github.repository }}:${{ needs.release-please.outputs.major }}.${{ needs.release-please.outputs.minor }}
+            ghcr.io/${{ github.repository }}:${{ needs.release-please.outputs.major }}
+            ghcr.io/${{ github.repository }}:latest
+          labels: |
+            org.opencontainers.image.title=Browserr
+            org.opencontainers.image.description=A self-hosted, Netflix-style discovery front-end for your media stack.
+            org.opencontainers.image.version=${{ needs.release-please.outputs.version }}
+          build-args: |
+            BROWSERR_VERSION=${{ needs.release-please.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

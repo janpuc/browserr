@@ -14,14 +14,17 @@ npm run dev               # http://localhost:3000
 Before opening a PR:
 
 ```bash
-npm run typecheck         # tsc --noEmit
+npm run typecheck         # tsc --noEmit (strict)
+npm test                  # Vitest unit tests
 npm run build             # production build must pass
 ```
 
-There is no ESLint config; **`tsc` (strict) is the gate**. Match the surrounding
-style: server-only code stays under `src/server/**`, client-safe types/utilities
-under `src/lib/**`, and **secrets and the Seerr internal URL never reach the
-client**.
+There is no ESLint config; **strict `tsc` + `npm test` are the gate** (the same
+checks CI runs). Match the surrounding style: server-only code stays under
+`src/server/**`, client-safe types/utilities under `src/lib/**`, and **secrets and
+the Seerr internal URL never reach the client** - the latter is locked down by a
+test in `src/lib/config.test.ts`, so add coverage there if you touch
+`toPublicConfig`.
 
 ## Branch model (GitHub Flow)
 
@@ -29,8 +32,8 @@ We keep it simple - trunk-based development:
 
 - **`main`** is always releasable and protected. No direct pushes.
 - Branch off `main` for every change: `feat/…`, `fix/…`, `docs/…`, `chore/…`.
-- Open a PR into `main`. CI (`typecheck` + `build` + demo export) must be green;
-  squash-merge to keep history linear.
+- Open a PR into `main`. CI (`typecheck` + `test` + `build` + demo export) must be
+  green; squash-merge to keep history linear.
 
 Suggested branch protection for `main`:
 
@@ -43,23 +46,16 @@ Suggested branch protection for `main`:
 > overhead this project doesn't need. If you ever want a public pre-release lane,
 > add a `next` branch that publishes a `:next` image tag, rather than git-flow.
 
-## Versioning & releases (SemVer)
+## Versioning & releases
 
-Versions follow [Semantic Versioning](https://semver.org): `MAJOR.MINOR.PATCH`.
+Releases are automated by [Release Please](https://github.com/googleapis/release-please)
+and follow [Semantic Versioning](https://semver.org). You never bump `package.json`
+or push a tag by hand - merge Conventional-Commit PRs into `main`, and a
+`chore(main): release X.Y.Z` PR accumulates the version bump and changelog. Merging
+**that** PR tags the release, publishes the GitHub Release, and builds the versioned
+image. Every push to `main` also publishes a moving **`:edge`** image for testers.
 
-`package.json` `version` is the source of truth, surfaced in the app via
-`BROWSERR_VERSION` (CI injects the git tag; falls back to `package.json`).
-
-To cut a release:
-
-1. Bump `version` in `package.json` on a PR; merge to `main`.
-2. Tag the merge commit and push:
-   ```bash
-   git tag v1.2.3 && git push origin v1.2.3
-   ```
-3. The **Publish image** workflow builds a multi-arch image and pushes:
-   - `ghcr.io/janpuc/browserr:1.2.3`, `:1.2`, and `:latest`.
-4. Every push to `main` also publishes a moving **`:edge`** image for early testers.
+Full details and the one-time repo setup are in **[docs/RELEASING.md](docs/RELEASING.md)**.
 
 ## The public demo
 
@@ -76,8 +72,17 @@ npm run demo:fixtures     # snapshots /api/home + top titles into public/demo/
 
 ## Commit messages
 
-Conventional-ish prefixes are appreciated (`feat:`, `fix:`, `docs:`, `chore:`,
-`refactor:`) but not enforced. Keep them imperative and scoped.
+Use [Conventional Commits](https://www.conventionalcommits.org) - they drive
+automated versioning and the changelog (see
+[docs/RELEASING.md](docs/RELEASING.md)). The type that lands on `main` (after a
+squash-merge, the **PR title**) is what counts:
+
+- `feat:` a user-facing capability - `fix:` a bug fix - `feat!:` / `BREAKING CHANGE:`
+  an incompatible change.
+- `docs:` `refactor:` `perf:` `test:` `chore:` `ci:` `build:` don't trigger a
+  release on their own.
+
+Keep them imperative and scoped.
 
 ## Reporting security issues
 

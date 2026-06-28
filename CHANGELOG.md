@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/janpuc/browserr/compare/v0.1.2...v0.1.3) (2026-06-28)
+
+
+### Features
+
+* mobile improvements ([8cbd0c8](https://github.com/janpuc/browserr/commit/8cbd0c84dadde038b271ef34f1d5ea0ee9088320))
+
 ## [0.1.2](https://github.com/janpuc/browserr/compare/v0.1.1...v0.1.2) (2026-06-28)
 
 

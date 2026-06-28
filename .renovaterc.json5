@@ -1,0 +1,78 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "config:recommended",
+    ":dependencyDashboard",
+    // Force chore(deps): on every update so dependency PRs never trip a
+    // release-please release - they ride along into the next real release.
+    ":semanticCommitTypeAll(chore)",
+    ":timezone(Europe/Warsaw)",
+  ],
+  labels: ["dependencies"],
+  rangeStrategy: "bump",
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ["before 6am on Monday"],
+  },
+  vulnerabilityAlerts: {
+    labels: ["security"],
+  },
+  packageRules: [
+    // ---- Auto-merge (always via a PR, so CI gates every merge) ----
+    {
+      description: "Auto-merge trusted GitHub Actions quickly",
+      matchManagers: ["github-actions"],
+      matchPackageNames: ["/^actions\\//", "/^docker\\//", "/^googleapis\\//", "/^renovatebot\\//"],
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      automerge: true,
+      automergeType: "pr",
+      minimumReleaseAge: "1 minute",
+    },
+    {
+      description: "Auto-merge other GitHub Actions after a short cooldown",
+      matchManagers: ["github-actions"],
+      matchUpdateTypes: ["minor", "patch", "digest"],
+      automerge: true,
+      automergeType: "pr",
+      minimumReleaseAge: "3 days",
+    },
+    {
+      description: "Auto-merge safe dev-dependency updates",
+      matchDepTypes: ["devDependencies"],
+      matchUpdateTypes: ["minor", "patch", "pin", "digest"],
+      groupName: "dev dependencies",
+      automerge: true,
+      automergeType: "pr",
+      minimumReleaseAge: "3 days",
+    },
+    // ---- Grouping ----
+    {
+      description: "Batch all non-major production dependencies into one PR",
+      matchDepTypes: ["dependencies"],
+      matchUpdateTypes: ["minor", "patch"],
+      groupName: "production dependencies",
+    },
+    {
+      description: "Keep the React packages together",
+      matchPackageNames: ["react", "react-dom", "@types/react", "@types/react-dom"],
+      groupName: "react",
+    },
+    {
+      description: "Keep the Next.js packages together",
+      matchPackageNames: ["next", "@next/*", "eslint-config-next"],
+      groupName: "next.js",
+    },
+    // ---- Majors are opt-in from the dependency dashboard (incl. node base image) ----
+    {
+      description: "Major updates need manual approval and are never auto-merged",
+      matchUpdateTypes: ["major"],
+      dependencyDashboardApproval: true,
+      automerge: false,
+    },
+    // ---- Labels by update type (home-ops convention) ----
+    { matchUpdateTypes: ["major"], addLabels: ["type/major"] },
+    { matchUpdateTypes: ["minor"], addLabels: ["type/minor"] },
+    { matchUpdateTypes: ["patch"], addLabels: ["type/patch"] },
+    { matchUpdateTypes: ["digest"], addLabels: ["type/digest"] },
+  ],
+}

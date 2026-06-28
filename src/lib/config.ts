@@ -18,6 +18,15 @@ export type AuthMode = (typeof AUTH_MODES)[number];
 export type MonetizationType = (typeof MONETIZATION_TYPES)[number];
 export type Theme = (typeof THEMES)[number];
 
+/**
+ * Where anonymous install heartbeats are sent. Maintainers: set this to your
+ * deployed counter Worker's `/ping` URL (see `telemetry/`) so distributed
+ * instances report in. Empty string = nothing is ever sent. Deployers can also
+ * override per-instance with the `TELEMETRY_URL` env var, or opt out entirely
+ * with `BROWSERR_TELEMETRY=false`.
+ */
+export const DEFAULT_TELEMETRY_URL = "";
+
 /** The fully-resolved server configuration (includes secrets). */
 export interface BrowserrConfig {
   core: {
@@ -55,6 +64,12 @@ export interface BrowserrConfig {
     databaseUrl: string;
     redisUrl: string;
   };
+  /** Anonymous, opt-out install telemetry. Server-only; never sent to the client. */
+  telemetry: {
+    enabled: boolean;
+    /** Counter endpoint that receives heartbeats; empty disables reporting. */
+    url: string;
+  };
   recs: {
     enableRecommendations: boolean;
     enableEmbeddings: boolean;
@@ -86,6 +101,7 @@ export function defaultConfig(): BrowserrConfig {
     // Relative by default so `npm run dev` works out of the box; Docker/compose
     // overrides this to the absolute volume path `sqlite:///data/browserr.db`.
     data: { databaseUrl: "sqlite://./data/browserr.db", redisUrl: "" },
+    telemetry: { enabled: true, url: DEFAULT_TELEMETRY_URL },
     recs: { enableRecommendations: true, enableEmbeddings: false, refreshCron: "0 */6 * * *" },
     features: { enableLibraryRails: true, heroRotateSeconds: 12 },
     appearance: { theme: "dark", accent: "0 72% 51%" },

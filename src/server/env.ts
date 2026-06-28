@@ -102,6 +102,10 @@ export function readEnvConfig(): DeepPartial<BrowserrConfig> {
       databaseUrl: str(e.DATABASE_URL),
       redisUrl: str(e.REDIS_URL),
     },
+    telemetry: {
+      enabled: bool(e.BROWSERR_TELEMETRY),
+      url: str(e.TELEMETRY_URL),
+    },
     recs: {
       enableRecommendations: bool(e.ENABLE_RECOMMENDATIONS),
       enableEmbeddings: bool(e.ENABLE_EMBEDDINGS),

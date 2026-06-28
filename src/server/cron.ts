@@ -3,6 +3,7 @@ import { getConfig } from "./config";
 import { log } from "./log";
 import { recomputeProfile } from "./recommend/profile";
 import { listRegionServices } from "./region";
+import { announceTelemetry, sendHeartbeat } from "./telemetry";
 import { DEFAULT_USER_ID } from "./user";
 
 /** Best-effort parse of "0 *​/N * * *" → N hours; defaults to 6h. */
@@ -26,6 +27,8 @@ export function startCron(): void {
   if (started) return;
   started = true;
 
+  void announceTelemetry();
+
   const run = async () => {
     try {
       const cfg = await getConfig();
@@ -33,6 +36,8 @@ export function startCron(): void {
       if (cfg.recs.enableRecommendations) {
         await recomputeProfile(DEFAULT_USER_ID).catch(() => {});
       }
+      // Anonymous, opt-out, self-throttled to once per day.
+      await sendHeartbeat().catch(() => {});
       log.info("cron refresh complete");
     } catch (err) {
       log.warn("cron refresh failed", { err: String(err) });

@@ -63,6 +63,10 @@ describe("toPublicConfig", () => {
       expect(serialized).not.toContain(leak);
     }
     expect("internalUrl" in pub.seerr).toBe(false);
+    // Server-only sections must never appear in the client projection.
+    expect("telemetry" in pub).toBe(false);
+    expect("data" in pub).toBe(false);
+    expect("sessionSecret" in pub.auth).toBe(false);
   });
 
   it("exposes only the browser-facing external URL and configured booleans", () => {

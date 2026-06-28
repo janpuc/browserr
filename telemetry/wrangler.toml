@@ -1,0 +1,9 @@
+name = "browserr-telemetry"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# Create the namespace once, then paste its id below:
+#   npx wrangler kv namespace create INSTALLS
+[[kv_namespaces]]
+binding = "INSTALLS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"

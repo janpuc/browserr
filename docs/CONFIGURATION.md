@@ -39,6 +39,8 @@ Seerr), region, services, feature toggles, and appearance. `DATABASE_URL` and
 | `RECS_REFRESH_CRON` | `0 */6 * * *` | Refresh cadence (hour-interval honored) |
 | `ENABLE_LIBRARY_RAILS` | `true` | "Available now in your library" rails |
 | `HERO_ROTATE_SECONDS` | `12` | Hero billboard rotation |
+| `BROWSERR_TELEMETRY` | `true` | Anonymous install heartbeat ([details](#telemetry--privacy)); `false` to opt out |
+| `TELEMETRY_URL` | _(project default)_ | Override the install-counter endpoint |
 
 ## The internal / external Seerr split (mandatory)
 
@@ -64,3 +66,20 @@ gets a working public deep link.
    `with_watch_providers`, and `with_watch_monetization_types`.
 
 Changing the region re-derives the service list and the whole catalog.
+
+## Telemetry & privacy
+
+Browserr sends an **anonymous, opt-out** install heartbeat so the project can show
+a rough count of active installs (the `installs` badge on the README).
+
+- **What's sent:** a random per-instance UUID (generated once, stored in your DB)
+  and the Browserr version string. That's it.
+- **What's never sent:** no IP is stored by the counter, no user data, no library
+  contents, no TMDB/Seerr config - nothing identifying.
+- **Cadence:** at most once per day, from the server only. It fails silently and
+  never affects the app. The static demo build never sends anything.
+- **Opt out:** set `BROWSERR_TELEMETRY=false`. On boot, the log states whether
+  telemetry is on and how to disable it.
+
+The counter backend is a small Cloudflare Worker (see [`telemetry/`](../telemetry/));
+self-hosters can point `TELEMETRY_URL` at their own instead.

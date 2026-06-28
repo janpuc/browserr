@@ -97,9 +97,12 @@ export function Rail({ rail }: { rail: RailModel }) {
         <div
           ref={scroller}
           onScroll={updateArrows}
-          // overflow-y-hidden + touch-pan-x lock to horizontal only; py-4 gives the
-          // hover scale a little room above/below the row.
-          className="no-scrollbar flex gap-2.5 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x scroll-smooth px-4 py-4 md:px-12"
+          // overflow-y-hidden keeps the row to a single line. touch-action
+          // pan-x/pan-y (not pan-x alone) is what lets a *vertical* swipe that
+          // starts on a card scroll the PAGE while a horizontal swipe pans the
+          // rail - the browser axis-locks per gesture. py-4 gives the hover
+          // scale a little room above/below the row.
+          className="no-scrollbar flex gap-2.5 overflow-x-auto overflow-y-hidden overscroll-x-contain [touch-action:pan-x_pan-y] scroll-smooth px-4 py-4 md:px-12"
         >
           {!inView
             ? Array.from({ length: 8 }).map((_, i) => (

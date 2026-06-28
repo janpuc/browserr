@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/janpuc/browserr/compare/v0.1.1...v0.1.2) (2026-06-28)
+
+
+### Features
+
+* add telemetry, rework renovate ([6e4a585](https://github.com/janpuc/browserr/commit/6e4a585ae892b2f8ebb473a19715d9f63b54954c))
+
 ## [0.1.1](https://github.com/janpuc/browserr/compare/0.1.0...v0.1.1) (2026-06-28)
 
 

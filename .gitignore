@@ -32,3 +32,8 @@ npm-debug.log*
 !.vscode/extensions.json
 .idea
 .claude/
+
+# cloudflare worker (telemetry/) - generated, never commit
+telemetry/node_modules/
+.wrangler/
+.dev.vars

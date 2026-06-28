@@ -6,4 +6,4 @@ compatibility_date = "2024-11-01"
 #   npx wrangler kv namespace create INSTALLS
 [[kv_namespaces]]
 binding = "INSTALLS"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "5c1a8e5b800b4daf9d76b3887e094496"

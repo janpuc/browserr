@@ -25,7 +25,7 @@ export type Theme = (typeof THEMES)[number];
  * override per-instance with the `TELEMETRY_URL` env var, or opt out entirely
  * with `BROWSERR_TELEMETRY=false`.
  */
-export const DEFAULT_TELEMETRY_URL = "";
+export const DEFAULT_TELEMETRY_URL = "https://browserr-telemetry.janpuc.workers.dev";
 
 /** The fully-resolved server configuration (includes secrets). */
 export interface BrowserrConfig {

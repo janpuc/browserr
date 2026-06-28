@@ -18,6 +18,12 @@ const ROW_ID = "telemetry";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PING_TIMEOUT_MS = 5_000;
 
+/** Accept either a base Worker URL or a full `/ping` URL in config. */
+function pingEndpoint(base: string): string {
+  const trimmed = base.replace(/\/+$/, "");
+  return trimmed.endsWith("/ping") ? trimmed : `${trimmed}/ping`;
+}
+
 interface TelemetryState {
   instanceId: string;
   lastSent?: number;
@@ -92,7 +98,7 @@ export async function sendHeartbeat(): Promise<void> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PING_TIMEOUT_MS);
   try {
-    await fetch(cfg.telemetry.url, {
+    await fetch(pingEndpoint(cfg.telemetry.url), {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ id: state.instanceId, version: VERSION }),

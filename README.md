@@ -5,7 +5,7 @@
 [![Deploy demo](https://github.com/janpuc/browserr/actions/workflows/pages.yml/badge.svg)](https://github.com/janpuc/browserr/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![ghcr.io](https://img.shields.io/badge/ghcr.io-janpuc%2Fbrowserr-2496ED?logo=docker&logoColor=white)](https://github.com/janpuc/browserr/pkgs/container/browserr)
-[![installs](https://img.shields.io/endpoint?url=https%3A%2F%2Fbrowserr-telemetry.YOUR-SUBDOMAIN.workers.dev%2Fbadge)](https://github.com/janpuc/browserr)
+[![installs](https://img.shields.io/endpoint?url=https%3A%2F%2Fbrowserr-telemetry.janpuc.workers.dev%2Fbadge)](https://github.com/janpuc/browserr)
 
 **A self-hosted, Netflix-style discovery front-end for your media stack.**
 

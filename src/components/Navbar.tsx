@@ -20,18 +20,31 @@ export function Navbar() {
   const { openHelp } = useShortcuts();
   const touch = useIsTouch();
   const [scrolled, setScrolled] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const lastY = useRef(0);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 24);
+      // On touch/mobile, hide the bar on scroll-down and reveal it on scroll-up.
+      if (touch && !searchOpen) {
+        if (y > lastY.current + 6 && y > 80) setHidden(true);
+        else if (y < lastY.current - 6) setHidden(false);
+      } else {
+        setHidden(false);
+      }
+      lastY.current = y;
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  }, [touch, searchOpen]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(q.trim()), 250);
@@ -78,7 +91,8 @@ export function Navbar() {
   return (
     <header
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-colors duration-300",
+        "fixed inset-x-0 top-0 z-50 transition-[transform,background-color] duration-300",
+        hidden && "-translate-y-full",
         scrolled || searchOpen
           ? "bg-background/95 backdrop-blur"
           : "bg-gradient-to-b from-black/70 to-transparent",

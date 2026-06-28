@@ -3,6 +3,7 @@ import { DEMO, demoApi } from "./demo";
 import type { SignalType } from "./signals";
 import type {
   Availability,
+  EpisodeSummary,
   HomeFeed,
   MediaSummary,
   MediaType,
@@ -47,6 +48,8 @@ const realApi = {
   getRails: (page: number) =>
     fetchJson<{ rails: Rail[]; hasMore: boolean }>(`/api/rails?page=${page}`),
   getTitle: (type: MediaType, id: number) => fetchJson<TitleResponse>(`/api/title/${type}/${id}`),
+  getSeason: (id: number, seasonNumber: number) =>
+    fetchJson<{ episodes: EpisodeSummary[] }>(`/api/title/tv/${id}/season/${seasonNumber}`),
 
   getAvailability: (items: { id: number; mediaType: MediaType }[]) =>
     fetchJson<{ availability: Record<string, Availability> }>("/api/availability", {

@@ -91,6 +91,22 @@ export interface TmdbSeason {
   air_date: string | null;
 }
 
+export interface TmdbEpisode {
+  episode_number: number;
+  name: string;
+  overview?: string;
+  air_date?: string | null;
+  runtime?: number | null;
+  still_path?: string | null;
+  vote_average?: number;
+}
+
+export interface TmdbSeasonDetail {
+  season_number: number;
+  name?: string;
+  episodes?: TmdbEpisode[];
+}
+
 export interface TmdbDetail extends TmdbMediaResult {
   genres?: { id: number; name: string }[];
   tagline?: string;

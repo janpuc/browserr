@@ -1,9 +1,9 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, Info, Play, Plus, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Info, Play, Plus, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAvailability } from "@/components/providers/availability";
 import { useConfig } from "@/components/providers/config";
 import { useDetail } from "@/components/providers/detail";
@@ -14,8 +14,12 @@ import { useRequestAction } from "@/components/useRequestAction";
 import { badgeForAvailability } from "@/lib/availability";
 import { sendSignalBeacon } from "@/lib/api";
 import { tmdbImage } from "@/lib/image";
+import { useIsTouch } from "@/lib/platform";
 import type { HeroSlide } from "@/lib/types";
 import { cn, formatRuntime } from "@/lib/utils";
+
+/** Hero CTA buttons: compact on mobile, full-size (lg) from md up so they fit. */
+const BTN_LG = "md:h-12 md:px-6 md:text-base";
 
 export function Hero({ slides, onReady }: { slides: HeroSlide[]; onReady?: () => void }) {
   const { config } = useConfig();
@@ -24,6 +28,25 @@ export function Hero({ slides, onReady }: { slides: HeroSlide[]; onReady?: () =>
   const request = useRequestAction();
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const touch = useIsTouch();
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+
+  const go = (dir: 1 | -1) => {
+    setIndex((i) => (i + dir + slides.length) % slides.length);
+    setPlaying(false);
+  };
+  const onTouchStart = (e: React.TouchEvent) => {
+    swipe.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = swipe.current;
+    swipe.current = null;
+    if (!start || slides.length <= 1) return;
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    // Horizontal-dominant swipe past a threshold flips the slide.
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) go(dx < 0 ? 1 : -1);
+  };
 
   const rotateSeconds = config.features.heroRotateSeconds || 12;
 
@@ -45,7 +68,11 @@ export function Hero({ slides, onReady }: { slides: HeroSlide[]; onReady?: () =>
   const { item } = slide;
 
   return (
-    <section className="relative h-[58vh] min-h-[420px] w-full overflow-hidden md:h-[78vh]">
+    <section
+      className="group/hero relative h-[58vh] min-h-[420px] w-full overflow-hidden md:h-[78vh]"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
       <AnimatePresence mode="popLayout">
         <motion.div
           key={item.id}
@@ -117,22 +144,22 @@ export function Hero({ slides, onReady }: { slides: HeroSlide[]; onReady?: () =>
             <p className="mb-5 line-clamp-3 max-w-lg text-sm text-zinc-200 md:text-base">{item.overview}</p>
           )}
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
             {slide.trailer &&
               (playing ? (
-                <Button variant="secondary" size="lg" onClick={() => setPlaying(false)}>
-                  <X className="h-5 w-5" /> Stop
+                <Button variant="secondary" size="md" className={BTN_LG} onClick={() => setPlaying(false)}>
+                  <X className="h-4 w-4 md:h-5 md:w-5" /> Stop
                 </Button>
               ) : (
                 <Button
-                  size="lg"
-                  className="bg-white text-black hover:bg-white/90"
+                  size="md"
+                  className={cn("bg-white text-black hover:bg-white/90", BTN_LG)}
                   onClick={() => {
                     setPlaying(true);
                     sendSignalBeacon({ tmdbId: item.id, mediaType: item.mediaType, type: "trailer_50" });
                   }}
                 >
-                  <Play className="h-5 w-5 fill-black" /> Play Trailer
+                  <Play className="h-4 w-4 fill-black md:h-5 md:w-5" /> Play Trailer
                 </Button>
               ))}
             <RequestButton
@@ -143,17 +170,44 @@ export function Hero({ slides, onReady }: { slides: HeroSlide[]; onReady?: () =>
             />
             <Button
               variant="secondary"
-              size="lg"
+              size="md"
+              className={BTN_LG}
               onClick={() => {
                 sendSignalBeacon({ tmdbId: item.id, mediaType: item.mediaType, type: "detail_open" });
                 open(item.mediaType, item.id);
               }}
             >
-              <Info className="h-5 w-5" /> More Info
+              <Info className="h-4 w-4 md:h-5 md:w-5" /> More Info
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Prev/next arrows: hidden until hover on desktop, always tappable on touch. */}
+      {slides.length > 1 && (
+        <>
+          <button
+            aria-label="Previous title"
+            onClick={() => go(-1)}
+            className={cn(
+              "absolute left-1 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/70 md:left-3",
+              touch ? "opacity-80" : "opacity-0 group-hover/hero:opacity-100",
+            )}
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </button>
+          <button
+            aria-label="Next title"
+            onClick={() => go(1)}
+            className={cn(
+              "absolute right-1 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/70 md:right-3",
+              touch ? "opacity-80" : "opacity-0 group-hover/hero:opacity-100",
+            )}
+          >
+            <ChevronRight className="h-6 w-6" />
+          </button>
+        </>
+      )}
 
       {/* Slide indicators. */}
       {slides.length > 1 && (
@@ -194,14 +248,14 @@ function RequestButton({
 
   if (availability && !spec.requestable) {
     return (
-      <Button variant="outline" size="lg" disabled className="opacity-90">
-        <Check className="h-5 w-5" /> {spec.label}
+      <Button variant="outline" size="md" disabled className={cn("opacity-90", BTN_LG)}>
+        <Check className="h-4 w-4 md:h-5 md:w-5" /> {spec.label}
       </Button>
     );
   }
   return (
-    <Button size="lg" onClick={() => onRequest({ tmdbId, mediaType, title })}>
-      <Plus className="h-5 w-5" /> Request
+    <Button size="md" className={BTN_LG} onClick={() => onRequest({ tmdbId, mediaType, title })}>
+      <Plus className="h-4 w-4 md:h-5 md:w-5" /> Request
     </Button>
   );
 }

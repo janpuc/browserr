@@ -61,6 +61,16 @@ export interface SeasonSummary {
   status?: number;
 }
 
+export interface EpisodeSummary {
+  episodeNumber: number;
+  name: string;
+  overview: string;
+  airDate: string | null;
+  runtime: number | null;
+  stillPath: string | null;
+  voteAverage: number;
+}
+
 export interface MediaDetail extends MediaSummary {
   tagline: string;
   genres: { id: number; name: string }[];

@@ -182,6 +182,19 @@ export const demoApi: Api = {
   getHome: (variant = 0) => demoHome(variant),
   getRails: async () => ({ rails: [], hasMore: false }),
   getTitle: (type, id) => demoTitle(type, id),
+  // Static demo has no episode fixtures - synthesize a generic list so the
+  // expandable season UI still demonstrates.
+  getSeason: async () => ({
+    episodes: Array.from({ length: 8 }, (_, i) => ({
+      episodeNumber: i + 1,
+      name: `Episode ${i + 1}`,
+      overview: "",
+      airDate: null,
+      runtime: null,
+      stillPath: null,
+      voteAverage: 0,
+    })),
+  }),
   getAvailability: async () => ({ availability: {} }),
   request: disabled("Requests"),
   signal: async () => ({ ok: true }),

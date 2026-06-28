@@ -46,8 +46,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en" className={themeClass} suppressHydrationWarning>
       <body style={accentStyle}>
         <Providers initialConfig={config}>
-          <Navbar />
-          <main className="min-h-screen">{children}</main>
+          {/* page-shell is translated down by pull-to-refresh; the navbar lives
+              inside it so the whole page slides as one. */}
+          <div id="page-shell">
+            <Navbar />
+            <main className="min-h-screen">{children}</main>
+          </div>
           {DEMO && <DemoBadge />}
         </Providers>
       </body>

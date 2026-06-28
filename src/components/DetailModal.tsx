@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { animate, AnimatePresence, motion, useMotionValue } from "framer-motion";
-import { Check, HelpCircle, Play, Plus, Star, X } from "lucide-react";
+import { Check, ChevronDown, HelpCircle, Play, Plus, Star, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useAvailabilityStore } from "@/components/providers/availability";
@@ -17,7 +17,7 @@ import { api, sendSignalBeacon } from "@/lib/api";
 import { badgeForAvailability } from "@/lib/availability";
 import { tmdbImage } from "@/lib/image";
 import { MEDIA_STATUS, type Availability, type MediaType, type ProviderInfo } from "@/lib/types";
-import { formatRuntime, ratingPercent } from "@/lib/utils";
+import { cn, formatRuntime, ratingPercent } from "@/lib/utils";
 
 export function DetailModal({
   target,
@@ -266,7 +266,7 @@ function DetailContent({
           )}
 
           {type === "tv" && detail.seasons.length > 0 && (
-            <Seasons seasons={detail.seasons} availability={availability} />
+            <Seasons tvId={id} seasons={detail.seasons} availability={availability} />
           )}
         </div>
 
@@ -393,9 +393,11 @@ function WhereToWatch({ watch }: { watch: import("@/lib/types").RegionWatch }) {
 }
 
 function Seasons({
+  tvId,
   seasons,
   availability,
 }: {
+  tvId: number;
   seasons: import("@/lib/types").SeasonSummary[];
   availability: Availability;
 }) {
@@ -403,28 +405,92 @@ function Seasons({
     <div className="mt-6">
       <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-muted-foreground">Seasons</h3>
       <div className="space-y-1.5">
-        {seasons.map((s) => {
-          const status = availability.seasons?.[s.seasonNumber];
-          const inLib = status === MEDIA_STATUS.AVAILABLE;
-          return (
-            <div
-              key={s.seasonNumber}
-              className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
-            >
-              <span>
-                {s.name} <span className="text-muted-foreground">· {s.episodeCount} ep</span>
-              </span>
-              {inLib ? (
-                <Badge className="bg-emerald-600 text-white">In library</Badge>
-              ) : status && status >= MEDIA_STATUS.PENDING ? (
-                <Badge className="bg-amber-500 text-black">Requested</Badge>
-              ) : (
-                <span className="text-xs text-muted-foreground">Not in library</span>
-              )}
-            </div>
-          );
-        })}
+        {seasons.map((s) => (
+          <SeasonRow key={s.seasonNumber} tvId={tvId} season={s} availability={availability} />
+        ))}
       </div>
+    </div>
+  );
+}
+
+/** A season row that expands to lazily fetch + list its episodes. */
+function SeasonRow({
+  tvId,
+  season,
+  availability,
+}: {
+  tvId: number;
+  season: import("@/lib/types").SeasonSummary;
+  availability: Availability;
+}) {
+  const [open, setOpen] = useState(false);
+  const status = availability.seasons?.[season.seasonNumber];
+  const inLib = status === MEDIA_STATUS.AVAILABLE;
+  const { data, isFetching } = useQuery({
+    queryKey: ["season", tvId, season.seasonNumber],
+    queryFn: () => api.getSeason(tvId, season.seasonNumber),
+    enabled: open,
+    staleTime: 5 * 60_000,
+  });
+  const episodes = data?.episodes ?? [];
+
+  return (
+    <div className="overflow-hidden rounded-md border border-border bg-muted/30">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition hover:bg-white/5"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180",
+            )}
+          />
+          <span className="truncate">
+            {season.name} <span className="text-muted-foreground">· {season.episodeCount} ep</span>
+          </span>
+        </span>
+        {inLib ? (
+          <Badge className="shrink-0 bg-emerald-600 text-white">In library</Badge>
+        ) : status && status >= MEDIA_STATUS.PENDING ? (
+          <Badge className="shrink-0 bg-amber-500 text-black">Requested</Badge>
+        ) : (
+          <span className="shrink-0 text-xs text-muted-foreground">Not in library</span>
+        )}
+      </button>
+
+      {open && (
+        <div className="border-t border-border">
+          {isFetching && episodes.length === 0 ? (
+            <p className="px-3 py-3 text-xs text-muted-foreground">Loading episodes…</p>
+          ) : episodes.length === 0 ? (
+            <p className="px-3 py-3 text-xs text-muted-foreground">No episode details available.</p>
+          ) : (
+            <ol className="divide-y divide-border/60">
+              {episodes.map((e) => (
+                <li key={e.episodeNumber} className="flex gap-3 px-3 py-2">
+                  <span className="w-6 shrink-0 pt-0.5 text-right text-sm tabular-nums text-muted-foreground">
+                    {e.episodeNumber}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{e.name}</p>
+                    {e.overview && (
+                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{e.overview}</p>
+                    )}
+                  </div>
+                  {(e.airDate || formatRuntime(e.runtime)) && (
+                    <span className="shrink-0 whitespace-nowrap pt-0.5 text-xs text-muted-foreground">
+                      {[e.airDate, formatRuntime(e.runtime)].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
     </div>
   );
 }

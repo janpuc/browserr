@@ -1,5 +1,6 @@
 import "server-only";
 import type {
+  EpisodeSummary,
   MediaDetail,
   MediaSummary,
   MediaType,
@@ -18,6 +19,7 @@ import type {
   TmdbMediaResult,
   TmdbPaginated,
   TmdbRegion,
+  TmdbSeasonDetail,
   TmdbWatchProvider,
 } from "./types";
 
@@ -232,6 +234,23 @@ export class TmdbClient {
       TTL.detail,
     );
     return toDetail(data, type, reg, this.language);
+  }
+
+  async getSeasonEpisodes(id: number, seasonNumber: number): Promise<EpisodeSummary[]> {
+    const data = await this.raw<TmdbSeasonDetail>(
+      `/tv/${id}/season/${seasonNumber}`,
+      { language: this.language },
+      TTL.detail,
+    );
+    return (data.episodes ?? []).map((e) => ({
+      episodeNumber: e.episode_number,
+      name: e.name,
+      overview: e.overview ?? "",
+      airDate: e.air_date || null,
+      runtime: e.runtime ?? null,
+      stillPath: e.still_path ?? null,
+      voteAverage: e.vote_average ?? 0,
+    }));
   }
 
   async getTitleProviders(type: MediaType, id: number, region: string): Promise<RegionWatch> {

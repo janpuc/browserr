@@ -2,6 +2,7 @@
   "name": "browserr",
   "version": "0.1.3",
   "private": true,
+  "type": "module",
   "description": "A self-hosted, Netflix-style discovery front-end for your media stack, with deep Seerr integration.",
   "scripts": {
     "dev": "next dev",

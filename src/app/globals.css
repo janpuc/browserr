@@ -39,29 +39,63 @@
   --accent-foreground: 0 0% 100%;
 }
 
-* {
-  border-color: hsl(var(--border));
-}
+/* Base resets MUST live in @layer base. In Tailwind v4, `@import "tailwindcss"`
+   puts all utilities in @layer utilities, and an *unlayered* rule beats any
+   layered rule regardless of specificity - so an unlayered `* { border-color }`
+   would override every border-color/outline utility (e.g. the loader's
+   border-t-accent, hero border-white/40, button focus rings). Layering it lets
+   utilities win again. */
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
 
-html {
-  scroll-behavior: smooth;
-  /* Never let the page itself scroll sideways. The horizontal rails are their
-     own scroll containers, so this only kills accidental page-level drift and
-     trackpad jitter from anything that bleeds a hair past the viewport. */
-  overflow-x: hidden;
-  overscroll-behavior: none;
-}
+  html {
+    scroll-behavior: smooth;
+    /* Never let the page itself scroll sideways. The horizontal rails are their
+       own scroll containers, so this only kills accidental page-level drift and
+       trackpad jitter from anything that bleeds a hair past the viewport. */
+    overflow-x: hidden;
+    overscroll-behavior: none;
+  }
 
-body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-  overscroll-behavior: none;
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* Respect reduced-motion: disable hero/hover animations. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Strong focus ring for keyboard + 10-foot/remote navigation. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--accent));
+    outline-offset: 2px;
+  }
+
+  /* Form fields manage their own focus affordance (a soft ring/border), so the
+     bold accent outline doesn't box them in - it stays for buttons/links/cards. */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+  }
 }
 
 /* Hide scrollbars on horizontal rails while keeping them scrollable. */
@@ -85,42 +119,11 @@ body {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    hsl(0 0% 100% / 0.06),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.06), transparent);
   animation: shimmer 1.6s infinite;
 }
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
   }
-}
-
-/* Respect reduced-motion: disable hero/hover animations. */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-/* Strong focus ring for keyboard + 10-foot/remote navigation. */
-:focus-visible {
-  outline: 2px solid hsl(var(--accent));
-  outline-offset: 2px;
-}
-
-/* Form fields manage their own focus affordance (a soft ring/border), so the
-   bold accent outline doesn't box them in - it stays for buttons/links/cards. */
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: none;
 }

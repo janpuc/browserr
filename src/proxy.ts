@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 
 /**
  * Optional HTTP Basic gate for AUTH_MODE=basic. Reads credentials from env only
- * (middleware runs on the edge runtime and can't reach the DB). Health checks
- * are intentionally left open for container probes.
+ * (this runs on the edge runtime and can't reach the DB). Health checks are
+ * intentionally left open for container probes.
+ *
+ * Next 16 renamed the `middleware` file convention to `proxy`.
  */
-export function middleware(req: Request) {
+export function proxy(req: Request) {
   if (process.env.AUTH_MODE !== "basic") return NextResponse.next();
 
   const user = process.env.BASIC_AUTH_USER;

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import { useCallback } from "react";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { useDetail } from "@/components/providers/detail";

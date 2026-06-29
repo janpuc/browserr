@@ -10,6 +10,11 @@
   ],
   labels: ["dependencies"],
   rangeStrategy: "bump",
+  // Open a PR for *every* update, majors included, and don't rate-limit
+  // creation - nothing should sit silently behind dashboard approval.
+  dependencyDashboardApproval: false,
+  prConcurrentLimit: 0,
+  prHourlyLimit: 0,
   lockFileMaintenance: {
     enabled: true,
     schedule: ["before 6am on Monday"],
@@ -37,7 +42,7 @@
       minimumReleaseAge: "3 days",
     },
     {
-      description: "Auto-merge safe dev-dependency updates",
+      description: "Auto-merge dev-dependency minor/patch",
       matchDepTypes: ["devDependencies"],
       matchUpdateTypes: ["minor", "patch", "pin", "digest"],
       groupName: "dev dependencies",
@@ -45,11 +50,20 @@
       automergeType: "pr",
       minimumReleaseAge: "3 days",
     },
-    // ---- Grouping ----
     {
-      description: "Batch all non-major production dependencies into one PR",
+      description: "Auto-merge production patch bumps (bugfix-level, CI-gated)",
       matchDepTypes: ["dependencies"],
-      matchUpdateTypes: ["minor", "patch"],
+      matchUpdateTypes: ["patch"],
+      groupName: "production patches",
+      automerge: true,
+      automergeType: "pr",
+      minimumReleaseAge: "3 days",
+    },
+    // ---- Grouped for review: a PR is created, but it is NOT auto-merged ----
+    {
+      description: "Batch production minor updates for review",
+      matchDepTypes: ["dependencies"],
+      matchUpdateTypes: ["minor"],
       groupName: "production dependencies",
     },
     {
@@ -62,11 +76,16 @@
       matchPackageNames: ["next", "@next/*", "eslint-config-next"],
       groupName: "next.js",
     },
-    // ---- Majors are opt-in from the dependency dashboard (incl. node base image) ----
     {
-      description: "Major updates need manual approval and are never auto-merged",
+      description: "Batch GitHub Actions major bumps into a single review PR",
+      matchManagers: ["github-actions"],
       matchUpdateTypes: ["major"],
-      dependencyDashboardApproval: true,
+      groupName: "github-actions (major)",
+    },
+    // ---- Majors always get a PR, but are never auto-merged (review by hand) ----
+    {
+      description: "Never auto-merge major updates",
+      matchUpdateTypes: ["major"],
       automerge: false,
     },
     // ---- Labels by update type (home-ops convention) ----

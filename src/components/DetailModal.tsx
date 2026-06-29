@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { animate, AnimatePresence, motion, useMotionValue } from "framer-motion";
+import { animate, AnimatePresence, motion, useMotionValue } from "motion/react";
 import { Check, ChevronDown, HelpCircle, Play, Plus, Star, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";

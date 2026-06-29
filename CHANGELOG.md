@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/janpuc/browserr/compare/v1.0.0...v1.1.0) (2026-06-29)
+
+
+### Features
+
+* improve security and add more telemetry ([b30bc5e](https://github.com/janpuc/browserr/commit/b30bc5e23ce23018e9e3c6a8d0a0dce807d5ecaf))
+
 ## [1.0.0](https://github.com/janpuc/browserr/compare/v0.1.4...v1.0.0) (2026-06-29)
 
 

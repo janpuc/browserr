@@ -4,19 +4,19 @@
 # ABI-consistent between build and runtime. Multi-arch: build with
 #   docker buildx build --platform linux/amd64,linux/arm64 -t browserr .
 
-FROM node:22.23.1-bookworm-slim AS deps
+FROM node:24.18.0-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-FROM node:22.23.1-bookworm-slim AS builder
+FROM node:24.18.0-bookworm-slim AS builder
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
 
-FROM node:22.23.1-bookworm-slim AS runner
+FROM node:24.18.0-bookworm-slim AS runner
 WORKDIR /app
 # CI passes the release version (git tag) here; falls back to package.json.
 ARG BROWSERR_VERSION=""

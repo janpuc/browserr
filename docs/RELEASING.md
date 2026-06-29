@@ -23,18 +23,18 @@ You never bump `package.json`, write the changelog, or push a tag by hand.
 | Workflow | Trigger | Does |
 |---|---|---|
 | **CI** (`ci.yml`) | every PR + push to `main` | typecheck -> **test** -> build -> demo export. The required status check. |
-| **Edge image** (`docker-publish.yml`) | push to `main` | builds `:edge` + `:sha-<short>` for early testers. |
-| **Release** (`release.yml`) | push to `main` | runs Release Please; when a release PR merges, a chained job builds the versioned `:X.Y.Z` / `:latest` image. |
+| **Release** (`release.yml`) | push to `main` | runs Release Please, then builds the multi-arch image **once**: always `:edge` + `:sha-<short>`, and when a release PR merges the same build also gets `:X.Y.Z` / `:X.Y` / `:X` / `:latest`. |
 | **Deploy demo** (`pages.yml`) | push to `main` | static, keyless demo to GitHub Pages. |
 
-### Why the image build is chained into `release.yml`
+### Why edge + release share one workflow
 
-Release Please creates the tag with the built-in `GITHUB_TOKEN`. GitHub
-deliberately **does not** let that token re-trigger other workflows (it would
-recurse), so a separate "build on tag push" job would silently never run. We avoid
-that trap by building the release image **in the same workflow**, in a job gated on
-`needs.release-please.outputs.release_created == 'true'`. No personal access token
-required.
+Two reasons. First, GitHub deliberately **does not** let the `GITHUB_TOKEN`-created
+release tag re-trigger other workflows (it would recurse), so a separate "build on
+tag push" job would silently never run - building in the same workflow as
+release-please sidesteps that, no PAT needed. Second, a release PR merge is just a
+push to `main`, so a separate edge workflow would fire **at the same time** and
+rebuild the identical image twice. Folding both into one `image` job builds it
+**once** and adds the version tags only when `release_created == 'true'`.
 
 ## Commit conventions
 
@@ -81,8 +81,7 @@ Pin `:X.Y.Z` (or at least `:X.Y`) in production; use `:edge` only for testing.
 
 ## Manual / fallback paths
 
-- Re-run the release check anytime via **Actions -> Release -> Run workflow**
-  (`workflow_dispatch`).
-- To force the image build outside a release, run **Actions -> Edge image -> Run
-  workflow**.
+- **Actions -> Release -> Run workflow** (`workflow_dispatch`) re-runs the release
+  check and rebuilds the `:edge` image (and publishes the release image too if a
+  release was just created).
 - A hotfix is just a `fix:` commit on `main`; merge the resulting release PR.

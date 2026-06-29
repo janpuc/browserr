@@ -1,15 +1,17 @@
 name: Release
 
-# Hands-off releases via Release Please.
+# Hands-off releases via Release Please, plus the container image build.
 #
 #   1. Every push to main, release-please reads the Conventional Commits since
 #      the last release and opens/updates a "release PR" that bumps the version
 #      in package.json and writes CHANGELOG.md.
-#   2. Merging that PR creates the git tag (vX.Y.Z) and the GitHub Release with
-#      generated notes - no manual tagging.
-#   3. Because the tag is created with GITHUB_TOKEN (which can't re-trigger other
-#      workflows), the release image is built right here in a chained job gated
-#      on `release_created`, rather than relying on a separate tag-push trigger.
+#   2. Merging that PR creates the git tag (vX.Y.Z) and the GitHub Release.
+#   3. The `image` job then builds the multi-arch image ONCE per push and tags it
+#      `:edge` + `:sha-<short>`; when this push is a release it ALSO tags the same
+#      build `:X.Y.Z`, `:X.Y`, `:X`, `:latest`. Doing it in one job (instead of a
+#      separate edge workflow) means a release merge builds the image once, not
+#      twice. It also sidesteps the "GITHUB_TOKEN can't re-trigger a tag-push
+#      workflow" trap - no PAT needed.
 on:
   push:
     branches: [main]
@@ -40,7 +42,6 @@ jobs:
 
   image:
     needs: release-please
-    if: needs.release-please.outputs.release_created == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,7 +49,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ needs.release-please.outputs.tag_name }}
+          # On a release this is the tagged commit; otherwise main HEAD - same
+          # commit either way, since release-please tags the merge commit.
+          ref: ${{ needs.release-please.outputs.tag_name || github.sha }}
 
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
@@ -60,22 +63,41 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build & push release image (amd64 + arm64)
+      - name: Compute tags & version
+        id: meta
+        env:
+          REPO: ghcr.io/${{ github.repository }}
+          RELEASED: ${{ needs.release-please.outputs.release_created }}
+          VERSION: ${{ needs.release-please.outputs.version }}
+          MAJOR: ${{ needs.release-please.outputs.major }}
+          MINOR: ${{ needs.release-please.outputs.minor }}
+        run: |
+          short="${GITHUB_SHA::7}"
+          tags="$REPO:edge"$'\n'"$REPO:sha-$short"
+          ver="edge-$short"
+          if [ "$RELEASED" = "true" ]; then
+            tags="$tags"$'\n'"$REPO:$VERSION"$'\n'"$REPO:$MAJOR.$MINOR"$'\n'"$REPO:$MAJOR"$'\n'"$REPO:latest"
+            ver="$VERSION"
+          fi
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+            echo "version=$ver"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build & push (amd64 + arm64)
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:${{ needs.release-please.outputs.version }}
-            ghcr.io/${{ github.repository }}:${{ needs.release-please.outputs.major }}.${{ needs.release-please.outputs.minor }}
-            ghcr.io/${{ github.repository }}:${{ needs.release-please.outputs.major }}
-            ghcr.io/${{ github.repository }}:latest
+          tags: ${{ steps.meta.outputs.tags }}
           labels: |
             org.opencontainers.image.title=Browserr
             org.opencontainers.image.description=A self-hosted, Netflix-style discovery front-end for your media stack.
-            org.opencontainers.image.version=${{ needs.release-please.outputs.version }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
           build-args: |
-            BROWSERR_VERSION=${{ needs.release-please.outputs.version }}
+            BROWSERR_VERSION=${{ steps.meta.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

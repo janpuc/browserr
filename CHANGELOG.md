@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4](https://github.com/janpuc/browserr/compare/v0.1.3...v0.1.4) (2026-06-29)
+
+
+### Features
+
+* bump dependencies and fix all issues ([ee0b66b](https://github.com/janpuc/browserr/commit/ee0b66b541ab36a03fa71e09f75ee6d5ef224183))
+* fix build warnings ([a1b5a9c](https://github.com/janpuc/browserr/commit/a1b5a9c99afb8148fc018c1459150e8bfb5a3874))
+
 ## [0.1.3](https://github.com/janpuc/browserr/compare/v0.1.2...v0.1.3) (2026-06-28)
 
 

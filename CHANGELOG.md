@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.0](https://github.com/janpuc/browserr/compare/v0.1.4...v1.0.0) (2026-06-29)
+
+
+### Chores
+
+* release ([20652f0](https://github.com/janpuc/browserr/commit/20652f044b5dd4f27bfcf191ed6815961202ffc6))
+* release ([06ba160](https://github.com/janpuc/browserr/commit/06ba160ff1058f23f81ba1ab93e3a8a54b4724fa))
+
 ## [0.1.4](https://github.com/janpuc/browserr/compare/v0.1.3...v0.1.4) (2026-06-29)
 
 

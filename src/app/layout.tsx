@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { CSSProperties } from "react";
-import { Github } from "lucide-react";
+import { GithubIcon } from "@/components/ui/GithubIcon";
 import type { Metadata, Viewport } from "next";
 import { Navbar } from "@/components/Navbar";
 import type { PublicConfig } from "@/lib/config";
@@ -72,7 +72,7 @@ function DemoBadge() {
       <span className="hidden sm:inline">Demo - requests &amp; settings are disabled</span>
       <span className="sm:hidden">Demo</span>
       <span className="mx-0.5 h-3 w-px bg-border" />
-      <Github className="h-3.5 w-3.5" /> janpuc/browserr
+      <GithubIcon className="h-3.5 w-3.5" /> janpuc/browserr
     </a>
   );
 }

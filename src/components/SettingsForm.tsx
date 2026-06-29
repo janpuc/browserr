@@ -1,12 +1,13 @@
 "use client";
 
-import { Github, Info, Loader2, Lock, RotateCcw, X } from "lucide-react";
+import { Info, Loader2, Lock, RotateCcw, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useConfig } from "@/components/providers/config";
 import { RegionServicePicker } from "@/components/RegionServicePicker";
 import { Button } from "@/components/ui/button";
+import { GithubIcon } from "@/components/ui/GithubIcon";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/toast";
 import { api } from "@/lib/api";
@@ -306,7 +307,7 @@ export function SettingsForm() {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 transition hover:text-foreground"
         >
-          <Github className="h-3.5 w-3.5" /> janpuc/browserr
+          <GithubIcon className="h-3.5 w-3.5" /> janpuc/browserr
         </a>
         <span>
           Browserr <span className="tabular-nums">v{config.core.version}</span>

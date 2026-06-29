@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, Loader2, Lock, RotateCcw, X } from "lucide-react";
+import { Download, Info, Loader2, Lock, RotateCcw, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -60,6 +60,28 @@ export function SettingsForm() {
 
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState<"tmdb" | "seerr" | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const exportDiagnostics = async () => {
+    setExporting(true);
+    try {
+      const data = await api.getDiagnostics();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `browserr-diagnostics-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Diagnostics exported", variant: "success" });
+    } catch {
+      toast({ title: "Could not export diagnostics" });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const applyTheme = (t: typeof theme) => {
     setTheme(t);
@@ -297,6 +319,16 @@ export function SettingsForm() {
       <Section title="Privacy & taste" subtitle="Transparency controls for recommendations.">
         <Button variant="outline" size="sm" onClick={resetTaste} disabled={locked}>
           <RotateCcw className="h-4 w-4" /> Reset taste profile
+        </Button>
+      </Section>
+
+      <Section
+        title="Diagnostics"
+        subtitle="Download a sanitized report (deployment facts, non-secret settings, recent logs) to attach to a GitHub issue. Secrets and the internal Seerr URL are redacted."
+      >
+        <Button variant="outline" size="sm" onClick={exportDiagnostics} disabled={exporting}>
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}{" "}
+          Export diagnostics
         </Button>
       </Section>
 

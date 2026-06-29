@@ -40,10 +40,22 @@ body:
     validations:
       required: true
   - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics export
+      description: |
+        The fastest way to give us context. In the app go to **Settings →
+        Diagnostics → Export diagnostics** (bottom of the Settings screen) and
+        attach the downloaded `browserr-diagnostics-*.json` here (drag it in), or
+        paste its contents. It includes your runtime (node/docker/k8s), non-secret
+        settings, and recent logs. **Secrets, API keys, and the internal Seerr URL
+        are already redacted** - but please skim it before posting.
+      render: json
+  - type: textarea
     id: logs
     attributes:
-      label: Relevant logs
-      description: Server logs and/or the browser console. Redact any secrets.
+      label: Additional logs (optional)
+      description: Any extra server logs or the browser console. Redact any secrets.
       render: shell
   - type: checkboxes
     id: checks

@@ -2,17 +2,16 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import type { StoredSettings } from "@/lib/config";
-import { getConfig, VERSION } from "./config";
+import { getConfig } from "./config";
 import { getDb } from "./db";
 import { settings as settingsTable } from "./db/schema";
+import { instanceFacts } from "./diagnostics";
 import { log } from "./log";
 
 /**
- * Anonymous, opt-out install telemetry. Each instance has one random UUID
- * (persisted in the settings table) and sends at most one heartbeat per day with
- * just that id + the running version. No IP, no user data, no content. Disable
- * with BROWSERR_TELEMETRY=false. Every path here is best-effort and never throws:
- * telemetry must never affect the app.
+ * Anonymous, opt-out install telemetry: one random per-instance UUID + non-PII
+ * deployment facts (see `instanceFacts`), at most once a day. Opt out with
+ * BROWSERR_TELEMETRY=false. Best-effort and never throws.
  */
 const ROW_ID = "telemetry";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -101,7 +100,7 @@ export async function sendHeartbeat(): Promise<void> {
     await fetch(pingEndpoint(cfg.telemetry.url), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id: state.instanceId, version: VERSION }),
+      body: JSON.stringify({ id: state.instanceId, ...instanceFacts(cfg) }),
       signal: ctrl.signal,
     });
     await saveState({ ...state, lastSent: Date.now() });

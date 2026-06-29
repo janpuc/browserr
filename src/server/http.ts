@@ -2,6 +2,7 @@ import "server-only";
 import { NextResponse } from "next/server";
 import { ConfigLockedError } from "./config";
 import { log } from "./log";
+import { UpstreamUrlError } from "./net";
 import { SeerrNotConfiguredError } from "./seerr/client";
 import { TmdbError, TmdbNotConfiguredError } from "./tmdb/client";
 
@@ -43,6 +44,10 @@ const buckets = new Map<string, { count: number; reset: number }>();
 
 export function rateLimit(key: string, limit: number, windowMs: number): void {
   const now = Date.now();
+  // Sweep expired buckets so unique keys can't grow the map without bound.
+  if (buckets.size > 5000) {
+    for (const [k, v] of buckets) if (v.reset < now) buckets.delete(k);
+  }
   const b = buckets.get(key);
   if (!b || b.reset < now) {
     buckets.set(key, { count: 1, reset: now + windowMs });
@@ -66,6 +71,7 @@ export async function handle(fn: () => Promise<Response>): Promise<Response> {
     return await fn();
   } catch (err) {
     if (err instanceof HttpError) return fail(err.status, err.message);
+    if (err instanceof UpstreamUrlError) return fail(400, err.message);
     if (err instanceof ConfigLockedError) return fail(423, err.message);
     if (err instanceof TmdbNotConfiguredError || err instanceof SeerrNotConfiguredError) {
       return fail(503, err.message);

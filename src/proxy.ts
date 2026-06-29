@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 
+/** Length-independent compare so Basic creds don't leak via early-exit timing. */
+function safeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const x = enc.encode(a);
+  const y = enc.encode(b);
+  let diff = x.length ^ y.length;
+  const len = Math.max(x.length, y.length);
+  for (let i = 0; i < len; i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
+}
+
 /**
- * Optional HTTP Basic gate for AUTH_MODE=basic. Reads credentials from env only
- * (this runs on the edge runtime and can't reach the DB). Health checks are
- * intentionally left open for container probes.
- *
- * Next 16 renamed the `middleware` file convention to `proxy`.
+ * Optional HTTP Basic gate for AUTH_MODE=basic (creds from env; runs on the edge
+ * runtime). Health checks stay open for container probes.
  */
 export function proxy(req: Request) {
   if (process.env.AUTH_MODE !== "basic") return NextResponse.next();
@@ -17,8 +25,13 @@ export function proxy(req: Request) {
   const auth = req.headers.get("authorization");
   if (auth?.startsWith("Basic ")) {
     try {
-      const [u, p] = atob(auth.slice(6)).split(":");
-      if (u === user && p === pass) return NextResponse.next();
+      const decoded = atob(auth.slice(6).trim());
+      const i = decoded.indexOf(":"); // split on first colon (passwords may contain ":")
+      const u = i >= 0 ? decoded.slice(0, i) : decoded;
+      const p = i >= 0 ? decoded.slice(i + 1) : "";
+      const okUser = safeEqual(u, user);
+      const okPass = safeEqual(p, pass);
+      if (okUser && okPass) return NextResponse.next();
     } catch {
       /* fall through to challenge */
     }

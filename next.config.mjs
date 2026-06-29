@@ -46,6 +46,13 @@ const serverConfig = {
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+          },
+          { key: "X-DNS-Prefetch-Control", value: "off" },
+          // X-Frame-Options / HSTS deliberately omitted (homelab iframe embedding +
+          // plain HTTP behind a TLS proxy); see SECURITY.md to opt in.
         ],
       },
     ];

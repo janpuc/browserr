@@ -7,3 +7,8 @@ compatibility_date = "2024-11-01"
 [[kv_namespaces]]
 binding = "INSTALLS"
 id = "5c1a8e5b800b4daf9d76b3887e094496"
+
+# /stats and /dashboard are locked with HTTP Basic auth (/ping and /badge stay
+# public). Set the password as a secret:  npx wrangler secret put STATS_PASS
+[vars]
+STATS_USER = "admin"

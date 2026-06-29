@@ -37,6 +37,7 @@ const realApi = {
   getConfig: () => fetchJson<PublicConfig>("/api/config"),
   saveConfig: (patch: SettingsPatch) =>
     fetchJson<PublicConfig>("/api/config", { method: "PUT", body: JSON.stringify(patch) }),
+  getDiagnostics: () => fetchJson<Record<string, unknown>>("/api/diagnostics"),
 
   getRegions: () => fetchJson<RegionOption[]>("/api/regions"),
   getServices: (region?: string) =>

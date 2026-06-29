@@ -39,6 +39,7 @@ export async function POST(req: Request) {
     const apiKey = body.apiKey ?? cfg.seerr.apiKey;
     const client = new SeerrClient(internalUrl, apiKey);
     if (!client.isConfigured()) throw new HttpError(400, "Seerr internal URL and API key required");
+    // (the SSRF guard runs inside SeerrClient.call)
     const status = await client.status();
     return ok({ ok: true, detail: `Seerr reachable${status.version ? ` - v${status.version}` : ""}` });
   });

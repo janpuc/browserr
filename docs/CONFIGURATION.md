@@ -73,9 +73,11 @@ Browserr sends an **anonymous, opt-out** install heartbeat so the project can sh
 a rough count of active installs (the `installs` badge on the README).
 
 - **What's sent:** a random per-instance UUID (generated once, stored in your DB)
-  and the Browserr version string. That's it.
-- **What's never sent:** no IP is stored by the counter, no user data, no library
-  contents, no TMDB/Seerr config - nothing identifying.
+  plus non-PII deployment facts - version, runtime (node/docker/kubernetes),
+  platform/arch, node version, auth mode, request mode, region, and which features
+  are enabled. (The exact payload is `instanceFacts` in `src/server/diagnostics.ts`.)
+- **What's never sent:** no IP, URLs, API keys, the internal Seerr URL, user data,
+  or library contents - nothing identifying or secret.
 - **Cadence:** at most once per day, from the server only. It fails silently and
   never affects the app. The static demo build never sends anything.
 - **Opt out:** set `BROWSERR_TELEMETRY=false`. On boot, the log states whether

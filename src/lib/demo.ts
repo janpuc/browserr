@@ -169,6 +169,10 @@ const disabled = (what: string) => (): never => {
 export const demoApi: Api = {
   getConfig: async () => DEMO_PUBLIC_CONFIG,
   saveConfig: disabled("Settings"),
+  getDiagnostics: async () => ({
+    note: "Diagnostics export is disabled in the static demo.",
+    facts: { version: VERSION, runtime: "demo" },
+  }),
   getRegions: async () => {
     try {
       const res = await fetch(`${BASE}/demo/regions.json`);

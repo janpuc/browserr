@@ -3,6 +3,7 @@ import type { Availability, MediaType } from "@/lib/types";
 import { cached } from "../cache";
 import { getConfig } from "../config";
 import { log } from "../log";
+import { assertSafeUpstreamUrl } from "../net";
 import type {
   SeerrMediaListItem,
   SeerrMediaListResponse,
@@ -54,6 +55,8 @@ export class SeerrClient {
 
   private async call<T>(path: string, init?: RequestInit): Promise<T> {
     if (!this.isConfigured()) throw new SeerrNotConfiguredError();
+    assertSafeUpstreamUrl(this.base()); // SSRF guard on every Seerr call
+
     const res = await fetch(this.base() + path, {
       ...init,
       headers: {

@@ -24,7 +24,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "lru-cache": "^11.5.1",
-    "lucide-react": "^1.22.0",
+    "lucide-react": "^1.23.0",
     "motion": "^12.42.0",
     "next": "^16.2.9",
     "react": "^19.2.7",

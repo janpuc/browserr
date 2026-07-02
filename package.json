@@ -40,7 +40,7 @@
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.5.2",
     "drizzle-kit": "^0.31.10",
-    "postcss": "^8.5.15",
+    "postcss": "^8.5.16",
     "tailwindcss": "^4.3.1",
     "typescript": "^6.0.3",
     "vite-tsconfig-paths": "^6.1.1",

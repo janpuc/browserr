@@ -12,3 +12,6 @@ id = "5c1a8e5b800b4daf9d76b3887e094496"
 # public). Set the password as a secret:  npx wrangler secret put STATS_PASS
 [vars]
 STATS_USER = "admin"
+# Only instances that pinged within this many days count as "live" (they ping
+# daily). Raise it to include instances that have been off for longer.
+ALIVE_DAYS = "3"

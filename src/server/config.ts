@@ -44,6 +44,9 @@ export class ConfigLockedError extends Error {
 
 // Settings change rarely; cache the resolved global DB layer and invalidate on save.
 let cachedGlobal: StoredSettings | null = null;
+// The fully-merged global config (defaults+env+DB). getConfig() runs on every
+// TMDB/Seerr call, so we memoize the result and only rebuild it on save.
+let resolvedGlobal: BrowserrConfig | null = null;
 
 async function loadStored(id: string): Promise<StoredSettings> {
   try {
@@ -72,18 +75,18 @@ async function loadStored(id: string): Promise<StoredSettings> {
  * overrides - which is exactly "env seeds defaults; GUI overrides env".
  */
 export async function getConfig(userId?: string): Promise<BrowserrConfig> {
-  const env = readEnvConfig();
-  let cfg = deepMergeConfig(defaultConfig(), env);
-
-  if (!cfg.core.lockConfig) {
-    if (cachedGlobal === null) cachedGlobal = await loadStored(GLOBAL);
-    cfg = deepMergeConfig(cfg, cachedGlobal);
-    if (userId && userId !== GLOBAL) {
-      const perUser = await loadStored(`user:${userId}`);
-      cfg = deepMergeConfig(cfg, perUser);
+  if (resolvedGlobal === null) {
+    let cfg = deepMergeConfig(defaultConfig(), readEnvConfig());
+    if (!cfg.core.lockConfig) {
+      if (cachedGlobal === null) cachedGlobal = await loadStored(GLOBAL);
+      cfg = deepMergeConfig(cfg, cachedGlobal);
     }
+    resolvedGlobal = cfg;
   }
-  return cfg;
+  // Fast path (no per-user override): return the shared, memoized global config.
+  if (!userId || userId === GLOBAL || resolvedGlobal.core.lockConfig) return resolvedGlobal;
+  const perUser = await loadStored(`user:${userId}`);
+  return Object.keys(perUser).length ? deepMergeConfig(resolvedGlobal, perUser) : resolvedGlobal;
 }
 
 export async function getPublicConfig(userId?: string): Promise<PublicConfig> {
@@ -123,7 +126,10 @@ export async function saveSettings(
     .values({ id: scope, data: merged, updatedAt: now })
     .onConflictDoUpdate({ target: settingsTable.id, set: { data: merged, updatedAt: now } });
 
-  if (scope === GLOBAL) cachedGlobal = merged;
+  if (scope === GLOBAL) {
+    cachedGlobal = merged;
+    resolvedGlobal = null;
+  }
   log.info("settings saved", { scope, sections: Object.keys(clean) });
   return getConfig(scope === GLOBAL ? undefined : scope.replace(/^user:/, ""));
 }
@@ -132,10 +138,14 @@ export async function saveSettings(
 export async function clearSettings(scope: string = GLOBAL): Promise<void> {
   const db = await getDb();
   await db.delete(settingsTable).where(eq(settingsTable.id, scope));
-  if (scope === GLOBAL) cachedGlobal = null;
+  if (scope === GLOBAL) {
+    cachedGlobal = null;
+    resolvedGlobal = null;
+  }
 }
 
 /** Test-only / cron hook to force a re-read of the cached DB layer. */
 export function invalidateConfigCache(): void {
   cachedGlobal = null;
+  resolvedGlobal = null;
 }

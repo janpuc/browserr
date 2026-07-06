@@ -1,18 +1,28 @@
 /// <reference types="@cloudflare/workers-types" />
 
 // Browserr install counter + anonymous telemetry. Instances POST a daily
-// heartbeat (UUID + non-PII facts); one KV key per instance (35-day TTL) holds
-// the facts in metadata so /stats can tally from list() alone.
+// heartbeat (UUID + non-PII facts); one KV key per instance holds the facts +
+// last-seen time in metadata, so /stats tallies from list() alone. Only LIVE
+// instances count: a key must have pinged within ALIVE_DAYS (default 3), and
+// keys expire soon after an instance stops pinging.
 // Public: /ping, /badge. Basic-auth gated (set STATS_PASS): /stats, /dashboard.
 export interface Env {
   INSTALLS: KVNamespace;
   STATS_USER?: string;
   STATS_PASS?: string;
+  ALIVE_DAYS?: string;
 }
 
-const TTL_SECONDS = 60 * 60 * 24 * 35;
 const MAX_BODY = 4096;
+const DAY_MS = 86_400_000;
+const ALIVE_DAYS_DEFAULT = 3;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** "Alive" window in ms: an instance counts only if it pinged within it. */
+const aliveMs = (env: Env): number => {
+  const d = Number(env.ALIVE_DAYS);
+  return (Number.isFinite(d) && d > 0 ? d : ALIVE_DAYS_DEFAULT) * DAY_MS;
+};
 
 const str = (v: unknown, max: number): string => (typeof v === "string" && v ? v.slice(0, max) : "");
 const enumOf = (v: unknown, allowed: readonly string[]): string =>
@@ -91,12 +101,17 @@ async function ping(request: Request, env: Env): Promise<Response> {
     rg: str(body.region, 4).toUpperCase() || "unknown",
     t: Date.now(),
   };
-  await env.INSTALLS.put(`i:${id}`, "", { expirationTtl: TTL_SECONDS, metadata: meta });
+  // Keep the key a couple of days past the alive window so the query-time filter
+  // (not TTL timing) defines "live"; dead instances expire soon after.
+  await env.INSTALLS.put(`i:${id}`, "", {
+    expirationTtl: Math.floor(aliveMs(env) / 1000) + 2 * 86_400,
+    metadata: meta,
+  });
   return new Response(null, { status: 204 });
 }
 
 interface Stats {
-  total: number; seerrConfigured: number;
+  total: number; seerrConfigured: number; windowDays: number;
   byVersion: Record<string, number>; byRuntime: Record<string, number>;
   byPlatform: Record<string, number>; byArch: Record<string, number>;
   byNode: Record<string, number>; byAuthMode: Record<string, number>;
@@ -107,15 +122,19 @@ const bump = (rec: Record<string, number>, key: string) => {
 };
 
 async function tally(env: Env): Promise<Stats> {
+  const window = aliveMs(env);
+  const cutoff = Date.now() - window;
   const s: Stats = {
-    total: 0, seerrConfigured: 0, byVersion: {}, byRuntime: {}, byPlatform: {},
-    byArch: {}, byNode: {}, byAuthMode: {}, byRequestMode: {}, byRegion: {},
+    total: 0, seerrConfigured: 0, windowDays: window / DAY_MS, byVersion: {}, byRuntime: {},
+    byPlatform: {}, byArch: {}, byNode: {}, byAuthMode: {}, byRequestMode: {}, byRegion: {},
   };
   let cursor: string | undefined;
   for (;;) {
     const page = await env.INSTALLS.list<Partial<Meta>>({ prefix: "i:", cursor });
     for (const key of page.keys) {
       const m = key.metadata ?? {};
+      // Live only: skip instances that haven't pinged within the alive window.
+      if (typeof m.t !== "number" || m.t < cutoff) continue;
       s.total++;
       bump(s.byVersion, m.v ?? "unknown");
       bump(s.byRuntime, m.rt ?? "unknown");
@@ -165,7 +184,7 @@ const DASHBOARD_HTML = `<!doctype html>
   .card h2{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#9a9a9a}
   a{color:#9ab}
 </style></head><body>
-<header><h1>Browserr - active installs (last ~35 days)</h1>
+<header><h1>Browserr - live installs</h1>
 <div class="total" id="total">…</div>
 <div id="extra" style="color:#9a9a9a"></div></header>
 <div class="grid" id="grid"></div>
@@ -183,7 +202,7 @@ function chart(title,obj,type){
 }
 fetch("/stats").then(r=>r.json()).then(s=>{
   document.getElementById("total").textContent=s.total;
-  document.getElementById("extra").textContent=s.seerrConfigured+" of "+s.total+" have Seerr configured";
+  document.getElementById("extra").textContent=s.seerrConfigured+" of "+s.total+" have Seerr configured · active in the last "+s.windowDays+" days";
   chart("Version",s.byVersion);
   chart("Runtime",s.byRuntime,"doughnut");
   chart("Region",s.byRegion);

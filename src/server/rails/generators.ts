@@ -68,13 +68,7 @@ async function summariesForRefs(
   cap = 18,
 ): Promise<MediaSummary[]> {
   const tmdb = await getTmdb();
-  const out = await mapLimit(refs.slice(0, cap), 6, async (r) => {
-    try {
-      return (await tmdb.getDetail(r.mediaType, r.id)) as MediaSummary;
-    } catch {
-      return null;
-    }
-  });
+  const out = await mapLimit(refs.slice(0, cap), 6, (r) => tmdb.getSummary(r.mediaType, r.id));
   return out.filter((s): s is MediaSummary => s !== null);
 }
 

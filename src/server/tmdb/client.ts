@@ -12,7 +12,7 @@ import type { MonetizationType } from "@/lib/config";
 import { cached, type CacheOpts } from "../cache";
 import { getConfig } from "../config";
 import { log } from "../log";
-import { regionWatch, toDetail, toSummaries } from "./normalize";
+import { regionWatch, toDetail, toSummaries, toSummary } from "./normalize";
 import type {
   TmdbDetail,
   TmdbGenre,
@@ -234,6 +234,18 @@ export class TmdbClient {
       TTL.detail,
     );
     return toDetail(data, type, reg, this.language);
+  }
+
+  /** Lightweight card summary (no append_to_response) for refs that only need poster/title. */
+  async getSummary(type: MediaType, id: number): Promise<MediaSummary | null> {
+    try {
+      const raw = await this.raw<TmdbDetail>(`/${type}/${id}`, { language: this.language }, TTL.detail);
+      const summary = toSummary(raw, type);
+      if (summary && raw.genres?.length) summary.genreIds = raw.genres.map((g) => g.id);
+      return summary;
+    } catch {
+      return null;
+    }
   }
 
   async getSeasonEpisodes(id: number, seasonNumber: number): Promise<EpisodeSummary[]> {

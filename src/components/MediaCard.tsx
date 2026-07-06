@@ -1,7 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
-import { useCallback } from "react";
+import { memo, useCallback } from "react";
 import { AvailabilityBadge } from "@/components/AvailabilityBadge";
 import { useDetail } from "@/components/providers/detail";
 import { BlurImage } from "@/components/ui/BlurImage";
@@ -32,9 +31,8 @@ function NoPoster({ title }: { title: string }) {
   );
 }
 
-export function MediaCard({ item, rank }: { item: MediaSummary; rank?: number }) {
+export const MediaCard = memo(function MediaCard({ item, rank }: { item: MediaSummary; rank?: number }) {
   const { open } = useDetail();
-  const reduce = useReducedMotion();
 
   const openDetail = useCallback(() => {
     sendSignalBeacon({ tmdbId: item.id, mediaType: item.mediaType, type: "detail_open" });
@@ -44,13 +42,11 @@ export function MediaCard({ item, rank }: { item: MediaSummary; rank?: number })
   const poster = tmdbImage(item.posterPath, "poster", "w342");
 
   return (
-    <motion.div
-      className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-md bg-muted outline-none ring-0 ring-white/20 focus-visible:ring-2"
+    <div
+      className="group relative aspect-[2/3] cursor-pointer overflow-hidden rounded-md bg-muted outline-none ring-0 ring-white/20 transition-transform duration-200 hover:scale-[1.04] focus-visible:ring-2 motion-reduce:transition-none motion-reduce:hover:scale-100"
       role="button"
       tabIndex={0}
       aria-label={item.title}
-      whileHover={reduce ? undefined : { scale: 1.04 }}
-      transition={{ type: "tween", duration: 0.18 }}
       onClick={openDetail}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -70,6 +66,6 @@ export function MediaCard({ item, rank }: { item: MediaSummary; rank?: number })
       <div className="absolute right-1.5 top-1.5">
         <AvailabilityBadge mediaType={item.mediaType} id={item.id} hideWhenRequestable className="text-[10px]" />
       </div>
-    </motion.div>
+    </div>
   );
-}
+});

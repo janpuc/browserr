@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { MediaCard } from "@/components/MediaCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Rail as RailModel } from "@/lib/types";
@@ -30,7 +30,7 @@ function useInView<T extends HTMLElement>(rootMargin = "400px") {
 
 const CARD_WIDTH = "w-[40vw] shrink-0 sm:w-[28vw] md:w-[18vw] lg:w-[14vw] xl:w-[12vw]";
 
-export function Rail({ rail }: { rail: RailModel }) {
+export const Rail = memo(function Rail({ rail }: { rail: RailModel }) {
   const { ref, inView } = useInView<HTMLElement>();
   const scroller = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
@@ -117,4 +117,4 @@ export function Rail({ rail }: { rail: RailModel }) {
       </div>
     </section>
   );
-}
+});
